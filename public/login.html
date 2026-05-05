@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <link rel="stylesheet" href="auth.css">
+</head>
+  <div class="auth-container">
+    <h1>登入</h1>
+
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="email" placeholder="輸入 Email">
+    </div>
+
+    <div class="form-group">
+      <label>密碼</label>
+      <input type="password" id="password" placeholder="輸入密碼">
+    </div>
+
+    <button onclick="login()">登入</button>
+
+    <p class="forgot"><a href="forgot-password.html">忘記密碼？</a></p>
+    <p class="switch-page">還沒有帳號？<a href="register.html">註冊</a></p>
+
+    <p id="message" class="message"></p>
+  </div>
+
+  <script>
+    async function login() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const message = document.getElementById('message');
+
+      try {
+        const res = await fetch('/api/users/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          // token 存進 localStorage，之後每個頁面都會用到
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('userID', data.userID);
+          localStorage.setItem('username', data.username);
+          localStorage.setItem('role', data.role);
+
+          // 根據是否設定過偏好決定跳去哪
+          if (!data.hasPreferences) {
+            window.location.href = 'preferences.html';
+          } else {
+            window.location.href = 'index.html';
+          }
+        } else {
+          message.textContent = data.message;
+          message.style.color = 'red';
+        }
+      } catch (err) {
+        message.textContent = '伺服器錯誤，請稍後再試';
+        message.style.color = 'red';
+      }
+    }
+  </script>
+</body>
+</html>

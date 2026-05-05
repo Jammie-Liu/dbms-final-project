@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>活動偏好設定</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="auth-container">
+    <h1>活動偏好設定</h1>
+    <p>請為以下四大分類排序（1 = 最感興趣，4 = 最不感興趣）</p>
+
+    <div class="pref-group">
+      <label>🎓 職涯與學術成長</label>
+      <select id="career">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+      </select>
+    </div>
+
+    <div class="pref-group">
+      <label>🎨 藝文與生活體驗</label>
+      <select id="arts">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+      </select>
+    </div>
+
+    <div class="pref-group">
+      <label>🎉 社團與社交娛樂</label>
+      <select id="social">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+      </select>
+    </div>
+
+    <div class="pref-group">
+      <label>🤝 志願服務與社會參與</label>
+      <select id="volunteer">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+      </select>
+    </div>
+
+    <button onclick="savePreferences()">送出</button>
+
+    <p id="message" class="message"></p>
+  </div>
+
+  <script>
+    async function savePreferences() {
+      const token = localStorage.getItem('token');
+      const message = document.getElementById('message');
+
+      const career = parseInt(document.getElementById('career').value);
+      const arts = parseInt(document.getElementById('arts').value);
+      const social = parseInt(document.getElementById('social').value);
+      const volunteer = parseInt(document.getElementById('volunteer').value);
+
+      // 檢查有沒有重複
+      const ranks = [career, arts, social, volunteer];
+      if (new Set(ranks).size !== 4) {
+        message.textContent = '每個排名只能選一次，不能重複！';
+        message.style.color = 'red';
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/users/preferences', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            career_rank: career,
+            arts_rank: arts,
+            social_rank: social,
+            volunteer_rank: volunteer
+          })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          message.textContent = '設定成功！';
+          message.style.color = 'green';
+          setTimeout(() => window.location.href = 'index.html', 1000);
+        } else {
+          message.textContent = data.message;
+          message.style.color = 'red';
+        }
+      } catch (err) {
+        message.textContent = '伺服器錯誤';
+        message.style.color = 'red';
+      }
+    }
+  </script>
+</body>
+</html>

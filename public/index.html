@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活動平台</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header class="header">
+        <div class="header-left">
+            <h2 style="margin:0; font-size: 1.2rem;">DBMS Project</h2>
+        </div>
+        <div class="header-right">
+            <input type="text" placeholder="搜尋活動...">
+            <button class="add-btn" title="發布活動">+</button>
+            <button class="logout-btn">登出</button>
+        </div>
+    </header>
+
+    <div class="filter-bar">
+        <button class="filter-btn active">全部</button>
+        <button class="filter-btn">職涯</button>
+        <button class="filter-btn">藝文</button>
+        <button class="filter-btn">社交</button>
+        <button class="filter-btn">志工</button>
+    </div>
+
+    <main class="main-content">
+        <div id="eventGrid" class="event-grid">
+            <p class="no-events">載入中...</p>
+        </div>
+    </main>
+
+    <nav class="bottom-bar">
+        <button onclick="location.href='index.html'">首頁</button>
+        <button onclick="location.href='favorites.html'">收藏</button>
+        <button onclick="location.href='history.html'">紀錄</button>
+        <button onclick="location.href='profile.html'">個人</button>
+    </nav>
+
+    <script src="script.js"></script>
+</body>
+</html>
