@@ -235,3 +235,89 @@ exports.updateEvent = async (req, res) => {
     res.status(500).json({ message: '伺服器錯誤' });
   }
 };
+
+// 【取得活動詳細（含評價）】
+exports.getEventDetail = async (req, res) => {
+  const { eventID } = req.params;
+
+  try {
+    // 取得活動資訊
+    const [eventRows] = await db.query(
+      `SELECT e.*, u.username AS organizerName
+       FROM Events e
+       JOIN Users u ON e.organizerID = u.userID
+       WHERE e.eventID = ?`,
+      [eventID]
+    );
+
+    if (eventRows.length === 0) {
+      return res.status(404).json({ message: '活動不存在' });
+    }
+
+    const event = eventRows[0];
+
+    // 取得評價
+    const [reviews] = await db.query(
+      `SELECT r.*, u.username
+       FROM Reviews r
+       JOIN Users u ON r.userID = u.userID
+       WHERE r.eventID = ?
+       ORDER BY r.createdAt DESC`,
+      [eventID]
+    );
+
+    event.reviews = reviews;
+    res.json(event);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: '伺服器錯誤' });
+  }
+};
+
+// 【修改活動】
+exports.updateEvent = async (req, res) => {
+  const { eventID } = req.params;
+  const userID = req.user.userID;
+  const {
+    title, category, description, eventTime, location,
+    registrationDeadline, registrationLink, hashtag,
+    imageURL, hasMeal, hasGift, fee
+  } = req.body;
+
+  try {
+    // 確認是本人的活動
+    const [rows] = await db.query(
+      'SELECT organizerID FROM Events WHERE eventID = ?',
+      [eventID]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ message: '活動不存在' });
+    }
+    if (rows[0].organizerID !== userID) {
+      return res.status(403).json({ message: '無權修改此活動' });
+    }
+
+    await db.query(
+      `UPDATE Events SET
+        title = ?, category = ?, description = ?,
+        eventTime = ?, location = ?,
+        registrationDeadline = ?, registrationLink = ?,
+        hashtag = ?, imageURL = ?,
+        hasMeal = ?, hasGift = ?, fee = ?,
+        auditStatus = 'unapproved'
+       WHERE eventID = ?`,
+      [
+        title, category, description, eventTime, location,
+        registrationDeadline || null, registrationLink || null,
+        hashtag || null, imageURL || null,
+        hasMeal ? 1 : 0, hasGift ? 1 : 0, fee || 0,
+        eventID
+      ]
+    );
+
+    res.json({ message: '活動已更新，重新送出審核' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: '伺服器錯誤' });
+  }
+};

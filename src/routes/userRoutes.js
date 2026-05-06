@@ -13,10 +13,10 @@ router.post('/reset-password', userController.resetPassword);
 router.post('/preferences', verifyToken, userController.setPreferences);
 router.get('/preferences', verifyToken, userController.getPreferences);
 router.get('/favorites', verifyToken, userController.getFavorites);
-router.post('/favorites/:eventID', verifyToken, userController.addFavorite);
-router.delete('/favorites/:eventID', verifyToken, userController.removeFavorite);
 router.get('/favorites/folders', verifyToken, userController.getFolders);
 router.post('/favorites/folders', verifyToken, userController.createFolder);
+router.post('/favorites/:eventID', verifyToken, userController.addFavorite);
+router.delete('/favorites/:eventID', verifyToken, userController.removeFavorite);
 router.get('/history', verifyToken, userController.getHistory);
 router.get('/my-events', verifyToken, userController.getMyEvents);
 

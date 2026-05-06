@@ -217,3 +217,168 @@ exports.getHistory = async (req, res) => {
 exports.getMyEvents = async (req, res) => {
   res.json({ message: "功能開發中" });
 };
+
+// 【取得我的活動】
+exports.getMyEvents = async (req, res) => {
+  const userID = req.user.userID;
+  try {
+    const [events] = await db.query(
+      `SELECT * FROM Events WHERE organizerID = ? ORDER BY publishedAt DESC`,
+      [userID]
+    );
+    res.json(events);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: '伺服器錯誤' });
+  }
+};
+
+// 【取得收藏列表】
+exports.getFavorites = async (req, res) => {
+  const userID = req.user.userID;
+  const { folderID } = req.query;
+
+  try {
+    let sql = `
+      SELECT e.*, f.folderID, f.createdAt as favoritedAt
+      FROM Favorites f
+      JOIN Events e ON f.eventID = e.eventID
+      WHERE f.userID = ?
+    `;
+    const params = [userID];
+
+    if (folderID) {
+      sql += ' AND f.folderID = ?';
+      params.push(folderID);
+    }
+
+    sql += ' ORDER BY f.createdAt DESC';
+
+    const [events] = await db.query(sql, params);
+    res.json(events);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: '伺服器錯誤' });
+  }
+};
+
+// 【新增收藏】
+exports.addFavorite = async (req, res) => {
+  const userID = req.user.userID;
+  const { eventID } = req.params;
+  const { folderID } = req.body;
+
+  try {
+    // 檢查是否已收藏
+    const [existing] = await db.query(
+      'SELECT favoriteID FROM Favorites WHERE userID = ? AND eventID = ?',
+      [userID, eventID]
+    );
+    if (existing.length > 0) {
+      return res.status(400).json({ message: '已經收藏過了' });
+    }
+
+    await db.query(
+      'INSERT INTO Favorites (userID, eventID, folderID) VALUES (?, ?, ?)',
+      [userID, eventID, folderID || null]
+    );
+    res.status(201).json({ message: '收藏成功' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: '伺服器錯誤' });
+  }
+};
+
+// 【取消收藏】
+exports.removeFavorite = async (req, res) => {
+  const userID = req.user.userID;
+  const { eventID } = req.params;
+
+  try {
+    await db.query(
+      'DELETE FROM Favorites WHERE userID = ? AND eventID = ?',
+      [userID, eventID]
+    );
+    res.json({ message: '已取消收藏' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: '伺服器錯誤' });
+  }
+};
+
+// 【取得收藏資料夾】
+exports.getFolders = async (req, res) => {
+  const userID = req.user.userID;
+
+  try {
+    const [folders] = await db.query(
+      'SELECT * FROM FavoriteFolders WHERE userID = ? ORDER BY createdAt DESC',
+      [userID]
+    );
+    res.json(folders);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: '伺服器錯誤' });
+  }
+};
+
+// 【建立收藏資料夾】
+exports.createFolder = async (req, res) => {
+  const userID = req.user.userID;
+  const { folderName } = req.body;
+
+  if (!folderName) {
+    return res.status(400).json({ message: '請輸入資料夾名稱' });
+  }
+
+  try {
+    await db.query(
+      'INSERT INTO FavoriteFolders (userID, folderName) VALUES (?, ?)',
+      [userID, folderName]
+    );
+    res.status(201).json({ message: '資料夾建立成功' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: '伺服器錯誤' });
+  }
+};
+
+// 【取得瀏覽紀錄】
+exports.getHistory = async (req, res) => {
+  const userID = req.user.userID;
+
+  try {
+    const [events] = await db.query(
+      `SELECT e.*, h.viewedAt
+       FROM BrowsingHistory h
+       JOIN Events e ON h.eventID = e.eventID
+       WHERE h.userID = ?
+       ORDER BY h.viewedAt DESC
+       LIMIT 50`,
+      [userID]
+    );
+    res.json(events);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: '伺服器錯誤' });
+  }
+};
+
+// 【取得偏好設定】
+exports.getPreferences = async (req, res) => {
+  const userID = req.user.userID;
+
+  try {
+    const [rows] = await db.query(
+      'SELECT * FROM UserPreferences WHERE userID = ?',
+      [userID]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ message: '尚未設定偏好' });
+    }
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: '伺服器錯誤' });
+  }
+};
