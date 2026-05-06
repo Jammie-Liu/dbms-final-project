@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我的收藏</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="header">
+    <h2>❤️ 我的收藏</h2>
+    <button onclick="createFolder()" class="add-btn">＋</button>
+  </div>
+
+  <div class="main-content" style="margin-top:70px">
+    <div id="folderList" style="margin-bottom:20px"></div>
+    <div id="favoriteList" class="event-grid"><p>載入中...</p></div>
+  </div>
+
+  <div class="bottom-bar">
+    <button onclick="window.location.href='index.html'">🏠 首頁</button>
+    <button onclick="window.location.href='favorites.html'">❤️ 我的收藏</button>
+    <button onclick="window.location.href='history.html'">🕐 瀏覽紀錄</button>
+    <button onclick="window.location.href='my-events.html'">📋 我的活動</button>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = 'login.html';
+
+    let currentFolderID = null;
+
+    async function loadFolders() {
+      const res = await fetch('/api/users/favorites/folders', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const folders = await res.json();
+      const folderList = document.getElementById('folderList');
+
+      folderList.innerHTML = `
+        <div class="folder-bar">
+          <button class="folder-btn ${currentFolderID === null ? 'active' : ''}"
+            onclick="selectFolder(null)">全部</button>
+          ${folders.map(f => `
+            <button class="folder-btn ${currentFolderID === f.folderID ? 'active' : ''}"
+              onclick="selectFolder(${f.folderID})">${f.folderName}</button>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    async function loadFavorites() {
+      let url = '/api/users/favorites';
+      if (currentFolderID) url += `?folderID=${currentFolderID}`;
+
+      const res = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const events = await res.json();
+      const list = document.getElementById('favoriteList');
+
+      if (events.length === 0) {
+        list.innerHTML = '<p class="no-events">還沒有收藏任何活動</p>';
+        return;
+      }
+
+      list.innerHTML = events.map(event => `
+        <div class="event-card" onclick="window.location.href='event.html?id=${event.eventID}'">
+          <div class="card-body">
+            <h3>${event.title}</h3>
+            <p>📅 ${new Date(event.eventTime).toLocaleDateString('zh-TW')}</p>
+            <p>📍 ${event.location}</p>
+            <button onclick="event.stopPropagation(); removeFavorite(${event.eventID})"
+              class="remove-btn">取消收藏</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function selectFolder(folderID) {
+      currentFolderID = folderID;
+      loadFolders();
+      loadFavorites();
+    }
+
+    async function createFolder() {
+      const name = prompt('請輸入資料夾名稱：');
+      if (!name) return;
+
+      await fetch('/api/users/favorites/folders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ folderName: name })
+      });
+
+      loadFolders();
+    }
+
+    async function removeFavorite(eventID) {
+      await fetch(`/api/users/favorites/${eventID}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      loadFavorites();
+    }
+
+    loadFolders();
+    loadFavorites();
+  </script>
+</body>
+</html>

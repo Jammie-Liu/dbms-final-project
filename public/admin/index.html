@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理員後台</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <div class="header">
+    <h2>⚙️ 管理員後台</h2>
+    <button class="logout-btn" onclick="logout()">登出</button>
+  </div>
+
+  <div class="filter-bar">
+    <button class="filter-btn active" onclick="setTab('pending', this)">待審核</button>
+    <button class="filter-btn" onclick="setTab('reported', this)">被檢舉</button>
+  </div>
+
+  <div class="main-content">
+    <div id="adminEventList" class="event-grid"><p>載入中...</p></div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('role');
+    if (!token || role !== 'admin') window.location.href = '../login.html';
+
+    let currentTab = 'pending';
+
+    async function loadEvents() {
+      const list = document.getElementById('adminEventList');
+      list.innerHTML = '<p>載入中...</p>';
+
+      const url = currentTab === 'pending'
+        ? '/api/admin/events/pending'
+        : '/api/admin/events/reported';
+
+      const res = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const events = await res.json();
+
+      if (events.length === 0) {
+        list.innerHTML = '<p class="no-events">沒有待處理的活動</p>';
+        return;
+      }
+
+      list.innerHTML = events.map(event => `
+        <div class="event-card">
+          <div class="card-top">
+            ${currentTab === 'reported'
+              ? `<span class="status-tag cancelled">${event.reportReasons}</span>`
+              : '<span class="status-tag soon">待審核</span>'
+            }
+          </div>
+          <div class="card-body">
+            <h3>${event.title}</h3>
+            <p>👤 ${event.organizerName}</p>
+            <p>📅 ${new Date(event.eventTime).toLocaleDateString('zh-TW')}</p>
+            <p>📍 ${event.location}</p>
+            <p style="margin-top:8px">${event.description}</p>
+            ${currentTab === 'reported'
+              ? `<p style="color:red">被檢舉 ${event.reportCount} 次</p>`
+              : ''
+            }
+            <div class="audit-btns">
+              <button onclick="audit(${event.eventID}, 'approved')"
+                style="background:#4caf50">通過</button>
+              <button onclick="audit(${event.eventID}, 'rejected')"
+                style="background:#f44336">不通過</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function audit(eventID, result) {
+      await fetch(`/api/admin/events/${eventID}/audit`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ result })
+      });
+      loadEvents();
+    }
+
+    function setTab(tab, btn) {
+      currentTab = tab;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      loadEvents();
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = '../login.html';
+    }
+
+    loadEvents();
+  </script>
+</body>
+</html>

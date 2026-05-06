@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我的活動</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="header">
+    <button class="back-btn" onclick="history.back()">← 返回</button>
+    <h2>我的活動</h2>
+    <div></div>
+  </div>
+
+  <div class="main-content" style="margin-top:70px">
+    <div id="myEventList" class="event-grid">
+      <p>載入中...</p>
+    </div>
+  </div>
+
+  <div class="bottom-bar">
+    <button onclick="window.location.href='index.html'">🏠 首頁</button>
+    <button onclick="window.location.href='favorites.html'">❤️ 我的收藏</button>
+    <button onclick="window.location.href='history.html'">🕐 瀏覽紀錄</button>
+    <button onclick="window.location.href='my-events.html'">📋 我的活動</button>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = 'login.html';
+
+    async function loadMyEvents() {
+      const res = await fetch('/api/users/my-events', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const events = await res.json();
+      const list = document.getElementById('myEventList');
+
+      if (events.length === 0) {
+        list.innerHTML = '<p class="no-events">還沒有發布過活動</p>';
+        return;
+      }
+
+      list.innerHTML = events.map(event => `
+        <div class="event-card">
+          <div class="card-top">
+            <span class="status-tag ${getAuditClass(event.auditStatus)}">
+              ${getAuditText(event.auditStatus)}
+            </span>
+            <div class="card-actions">
+              <span onclick="editEvent(${event.eventID})" title="修改">✏️</span>
+              <span onclick="cancelEvent(${event.eventID})" title="取消">❌</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <h3>${event.title}</h3>
+            <p>📅 ${new Date(event.eventTime).toLocaleDateString('zh-TW')}</p>
+            <p>📍 ${event.location}</p>
+            <p>狀態：${getStatusText(event.status)}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function getAuditClass(status) {
+      if (status === 'approved') return 'open';
+      if (status === 'rejected') return 'cancelled';
+      return 'soon';
+    }
+
+    function getAuditText(status) {
+      if (status === 'approved') return '審核通過';
+      if (status === 'rejected') return '審核未通過';
+      return '尚未審核';
+    }
+
+    function getStatusText(status) {
+      const map = {
+        pending: '待審核', approved: '已通過',
+        rejected: '未通過', cancelled: '已取消'
+      };
+      return map[status] || status;
+    }
+
+    function editEvent(eventID) {
+      window.location.href = `create-event.html?edit=${eventID}`;
+    }
+
+    async function cancelEvent(eventID) {
+      if (!confirm('確定要取消此活動嗎？')) return;
+
+      const res = await fetch(`/api/events/${eventID}/cancel`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (res.ok) {
+        alert('活動已取消');
+        loadMyEvents();
+      }
+    }
+
+    loadMyEvents();
+  </script>
+</body>
+</html>

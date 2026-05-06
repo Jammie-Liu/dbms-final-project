@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>活動詳細</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="header">
+    <button class="back-btn" onclick="history.back()">← 返回</button>
+    <h2>活動詳細</h2>
+    <div></div>
+  </div>
+
+  <div class="form-container" id="eventDetail">
+    <p>載入中...</p>
+  </div>
+
+  <!-- 評價 popup -->
+  <div id="reviewPopup" class="popup-overlay" style="display:none">
+    <div class="popup-box">
+      <h3>新增評價</h3>
+      <p id="attendedQuestion">你是否有參加過此活動？</p>
+      <div id="attendedBtns">
+        <button onclick="confirmAttended(true)">Yes</button>
+        <button onclick="confirmAttended(false)" class="cancel-btn">No</button>
+      </div>
+      <div id="reviewForm" style="display:none">
+        <div class="star-row">
+          <span>評分：</span>
+          <span class="star" onclick="setStar(1)">⭐</span>
+          <span class="star" onclick="setStar(2)">⭐</span>
+          <span class="star" onclick="setStar(3)">⭐</span>
+          <span class="star" onclick="setStar(4)">⭐</span>
+          <span class="star" onclick="setStar(5)">⭐</span>
+          <span id="starCount">0 顆</span>
+        </div>
+        <textarea id="reviewContent" rows="4" placeholder="寫下你的評價..."></textarea>
+        <div class="popup-footer">
+          <button onclick="closePopup()">取消</button>
+          <button onclick="submitReview()">完成</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = 'login.html';
+
+    const params = new URLSearchParams(window.location.search);
+    const eventID = params.get('id');
+    let selectedStar = 0;
+
+    async function loadEvent() {
+      const res = await fetch(`/api/events/${eventID}`);
+      const event = await res.json();
+
+      const categoryMap = {
+        career: '🎓 職涯與學術成長',
+        arts: '🎨 藝文與生活體驗',
+        social: '🎉 社團與社交娛樂',
+        volunteer: '🤝 志願服務與社會參與'
+      };
+
+      const eventTime = new Date(event.eventTime).toLocaleString('zh-TW');
+      const deadline = event.registrationDeadline
+        ? new Date(event.registrationDeadline).toLocaleString('zh-TW')
+        : '無截止時間';
+
+      document.getElementById('eventDetail').innerHTML = `
+        ${event.imageURL ? `<img src="${event.imageURL}" style="width:100%;border-radius:12px;margin-bottom:16px">` : ''}
+        <span class="category-tag">${categoryMap[event.category]}</span>
+        <h2 style="margin:10px 0">${event.title}</h2>
+        <p>📅 ${eventTime}</p>
+        <p>📍 ${event.location}</p>
+        <p>💰 ${event.fee > 0 ? event.fee + ' 元' : '免費'}</p>
+        <p>⏰ 報名截止：${deadline}</p>
+        ${event.hasMeal ? '<p>🍱 附餐食</p>' : ''}
+        ${event.hasGift ? '<p>🎁 附贈品</p>' : ''}
+        ${event.hashtag ? `<p style="color:#6c63ff">${event.hashtag}</p>` : ''}
+        ${event.registrationLink
+          ? `<a href="${event.registrationLink}" target="_blank"><button style="margin-top:12px">立即報名</button></a>`
+          : ''}
+
+        <hr style="margin:20px 0">
+        <h3>活動說明</h3>
+        <p style="margin-top:8px;line-height:1.6">${event.description}</p>
+
+        <hr style="margin:20px 0">
+        <h3>評價</h3>
+        <div id="reviewList">載入中...</div>
+        <button onclick="document.getElementById('reviewPopup').style.display='flex'"
+          style="margin-top:12px">新增評價</button>
+      `;
+
+      loadReviews();
+    }
+
+    async function loadReviews() {
+      const res = await fetch(`/api/events/${eventID}`);
+      const event = await res.json();
+      const reviewList = document.getElementById('reviewList');
+
+      if (!event.reviews || event.reviews.length === 0) {
+        reviewList.innerHTML = '<p style="color:#888">還沒有評價</p>';
+        return;
+      }
+
+      reviewList.innerHTML = event.reviews.map(r => `
+        <div class="review-card">
+          <div class="review-top">
+            <span><b>${r.username}</b></span>
+            <span>${r.stars ? '⭐'.repeat(r.stars) : '（未評分）'}</span>
+          </div>
+          <p>${r.content || ''}</p>
+        </div>
+      `).join('');
+    }
+
+    function confirmAttended(yes) {
+      document.getElementById('attendedBtns').style.display = 'none';
+      document.getElementById('attendedQuestion').style.display = 'none';
+      if (yes) {
+        document.getElementById('reviewForm').style.display = 'block';
+      } else {
+        closePopup();
+      }
+    }
+
+    function setStar(n) {
+      selectedStar = n;
+      document.getElementById('starCount').textContent = n + ' 顆';
+    }
+
+    function closePopup() {
+      document.getElementById('reviewPopup').style.display = 'none';
+      document.getElementById('attendedBtns').style.display = 'flex';
+      document.getElementById('attendedQuestion').style.display = 'block';
+      document.getElementById('reviewForm').style.display = 'none';
+      selectedStar = 0;
+    }
+
+    async function submitReview() {
+      const content = document.getElementById('reviewContent').value;
+      const res = await fetch(`/api/events/${eventID}/review`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          hasAttended: true,
+          stars: selectedStar || null,
+          content
+        })
+      });
+
+      if (res.ok) {
+        closePopup();
+        alert('評價送出成功！');
+        loadReviews();
+      }
+    }
+
+    loadEvent();
+  </script>
+</body>
+</html>
