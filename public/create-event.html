@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>新增活動</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="header">
+    <button class="back-btn" onclick="history.back()">← 返回</button>
+    <h2>新增活動</h2>
+    <div></div>
+  </div>
+
+  <div class="form-container">
+    <div class="form-group">
+      <label>活動分類 *</label>
+      <select id="category">
+        <option value="">請選擇</option>
+        <option value="career">🎓 職涯與學術成長</option>
+        <option value="arts">🎨 藝文與生活體驗</option>
+        <option value="social">🎉 社團與社交娛樂</option>
+        <option value="volunteer">🤝 志願服務與社會參與</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>活動標題 *</label>
+      <input type="text" id="title" placeholder="輸入活動標題">
+    </div>
+
+    <div class="form-group">
+      <label>活動時間 *</label>
+      <input type="datetime-local" id="eventTime">
+    </div>
+
+    <div class="form-group">
+      <label>活動地點 *</label>
+      <input type="text" id="location" placeholder="輸入地點">
+    </div>
+
+    <div class="form-group">
+      <label>活動說明 *</label>
+      <textarea id="description" rows="5" placeholder="輸入活動說明"></textarea>
+    </div>
+
+    <hr>
+    <p class="section-title">選填資訊</p>
+
+    <div class="form-group">
+      <label>報名截止時間</label>
+      <input type="datetime-local" id="registrationDeadline">
+    </div>
+
+    <div class="form-group">
+      <label>報名連結</label>
+      <input type="url" id="registrationLink" placeholder="https://...">
+    </div>
+
+    <div class="form-group">
+      <label>Hashtag</label>
+      <input type="text" id="hashtag" placeholder="例：#職涯 #講座">
+    </div>
+
+    <div class="form-group">
+      <label>費用（元）</label>
+      <input type="number" id="fee" placeholder="0 代表免費" min="0">
+    </div>
+
+    <div class="form-group checkbox-group">
+      <label><input type="checkbox" id="hasMeal"> 附餐食</label>
+      <label><input type="checkbox" id="hasGift"> 附贈品</label>
+    </div>
+
+    <div class="form-group">
+      <label>活動圖片</label>
+      <input type="file" id="imageFile" accept="image/*">
+      <p class="hint">圖片上傳功能開發中，可先填圖片網址</p>
+      <input type="url" id="imageURL" placeholder="或貼上圖片網址">
+    </div>
+
+    <button onclick="createEvent()">送出審核</button>
+    <p id="message" class="message"></p>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = 'login.html';
+
+    async function createEvent() {
+      const message = document.getElementById('message');
+
+      const category = document.getElementById('category').value;
+      const title = document.getElementById('title').value;
+      const eventTime = document.getElementById('eventTime').value;
+      const location = document.getElementById('location').value;
+      const description = document.getElementById('description').value;
+
+      if (!category || !title || !eventTime || !location || !description) {
+        message.textContent = '請填寫所有必填欄位';
+        message.style.color = 'red';
+        return;
+      }
+
+      const body = {
+        category,
+        title,
+        eventTime,
+        location,
+        description,
+        registrationDeadline: document.getElementById('registrationDeadline').value || null,
+        registrationLink: document.getElementById('registrationLink').value || null,
+        hashtag: document.getElementById('hashtag').value || null,
+        fee: parseInt(document.getElementById('fee').value) || 0,
+        hasMeal: document.getElementById('hasMeal').checked,
+        hasGift: document.getElementById('hasGift').checked,
+        imageURL: document.getElementById('imageURL').value || null,
+      };
+
+      try {
+        const res = await fetch('/api/events', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(body)
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          message.textContent = '活動已送出，等待審核！';
+          message.style.color = 'green';
+          setTimeout(() => window.location.href = 'my-events.html', 1500);
+        } else {
+          message.textContent = data.message;
+          message.style.color = 'red';
+        }
+      } catch (err) {
+        message.textContent = '伺服器錯誤';
+        message.style.color = 'red';
+      }
+    }
+  </script>
+</body>
+</html>
