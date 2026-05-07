@@ -1,45 +1,55 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>活動平台</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>學生活動資訊平台</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <header class="header">
-        <div class="header-left">
-            <h2 style="margin:0; font-size: 1.2rem;">DBMS Project</h2>
-        </div>
-        <div class="header-right">
-            <input type="text" placeholder="搜尋活動...">
-            <button class="add-btn" title="發布活動">+</button>
-            <button class="logout-btn">登出</button>
-        </div>
-    </header>
-
-    <div class="filter-bar">
-        <button class="filter-btn active">全部</button>
-        <button class="filter-btn">職涯</button>
-        <button class="filter-btn">藝文</button>
-        <button class="filter-btn">社交</button>
-        <button class="filter-btn">志工</button>
+  <!-- Header -->
+  <div class="header">
+    <span class="header-brand">🎯 學生活動資訊平台</span>
+    <div class="header-right">
+      <input class="header-search" type="text" id="searchInput" placeholder="搜尋活動...">
+      <button class="header-btn" onclick="searchEvents()">🔍</button>
+      <button class="header-btn add" onclick="window.location.href='create-event.html'">＋</button>
+      <span class="welcome-chip" id="welcomeText"></span>
+      <button class="logout-btn" onclick="logout()">登出</button>
     </div>
+  </div>
 
-    <main class="main-content">
-        <div id="eventGrid" class="event-grid">
-            <p class="no-events">載入中...</p>
-        </div>
-    </main>
+  <!-- 分類篩選 -->
+  <div class="filter-bar">
+    <button class="category-btn filter-btn active" onclick="setCategory('', this)">全部</button>
+    <button class="category-btn filter-btn" onclick="setCategory('career', this)">🎓 職涯</button>
+    <button class="category-btn filter-btn" onclick="setCategory('arts', this)">🎨 藝文</button>
+    <button class="category-btn filter-btn" onclick="setCategory('social', this)">🎉 社交</button>
+    <button class="category-btn filter-btn" onclick="setCategory('volunteer', this)">🤝 志工</button>
+  </div>
 
-    <nav class="bottom-bar">
-        <button onclick="location.href='index.html'">首頁</button>
-        <button onclick="location.href='favorites.html'">收藏</button>
-        <button onclick="location.href='history.html'">紀錄</button>
-        <button onclick="location.href='profile.html'">個人</button>
-    </nav>
+  <!-- ✅ 這個一定要有！ -->
+  <div class="main-content">
+    <div id="eventList" class="event-grid"></div>
+  </div>
 
-    <script src="script.js"></script>
+  <!-- 下方 Bar -->
+  <div class="bottom-bar">
+    <button onclick="window.location.href='index.html'">
+      <span class="bar-icon">🏠</span>首頁
+    </button>
+    <button onclick="window.location.href='favorites.html'">
+      <span class="bar-icon">❤️</span>收藏
+    </button>
+    <button onclick="window.location.href='history.html'">
+      <span class="bar-icon">🕐</span>紀錄
+    </button>
+    <button onclick="window.location.href='my-events.html'">
+      <span class="bar-icon">📋</span>我的活動
+    </button>
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>

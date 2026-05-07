@@ -4,7 +4,6 @@ const { generateToken } = require('../lib/auth');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 
-// 驗證密碼格式
 function isValidPassword(pw) {
   if (pw.length < 8 || pw.length > 12) return false;
   if (!/[0-9]/.test(pw)) return false;
@@ -15,18 +14,14 @@ function isValidPassword(pw) {
 // 【註冊】
 exports.register = async (req, res) => {
   const { username, email, password } = req.body;
-
   if (!isValidPassword(password)) {
     return res.status(400).json({ message: '密碼需 8~12 字元，且含至少 1 數字與 1 英文' });
   }
-
   try {
-    // 檢查 email 是否已被使用
     const [existing] = await db.query('SELECT userID FROM Users WHERE email = ?', [email]);
     if (existing.length > 0) {
       return res.status(400).json({ message: 'Email 已被使用' });
     }
-
     const hashedPw = await bcrypt.hash(password, 10);
     await db.query(
       'INSERT INTO Users (username, email, password) VALUES (?, ?, ?)',
@@ -42,33 +37,26 @@ exports.register = async (req, res) => {
 // 【登入】
 exports.login = async (req, res) => {
   const { email, password } = req.body;
-
   try {
     const [rows] = await db.query('SELECT * FROM Users WHERE email = ?', [email]);
     if (rows.length === 0) {
       return res.status(401).json({ message: 'Email 或密碼錯誤' });
     }
-
     const user = rows[0];
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
       return res.status(401).json({ message: 'Email 或密碼錯誤' });
     }
-
     const token = generateToken(user);
-
-    // 檢查是否已設定偏好
     const [prefs] = await db.query(
-      'SELECT * FROM UserPreferences WHERE userID = ?',
-      [user.userID]
+      'SELECT * FROM UserPreferences WHERE userID = ?', [user.userID]
     );
-
     res.json({
       token,
       userID: user.userID,
       username: user.username,
       role: user.role,
-      hasPreferences: prefs.length > 0,  // 前端根據這個決定要不要跳活動偏好頁
+      hasPreferences: prefs.length > 0,
     });
   } catch (err) {
     console.error(err);
@@ -80,15 +68,11 @@ exports.login = async (req, res) => {
 exports.setPreferences = async (req, res) => {
   const { career_rank, arts_rank, social_rank, volunteer_rank } = req.body;
   const userID = req.user.userID;
-
-  // 驗證排名是否合法（1~4 且不重複）
   const ranks = [career_rank, arts_rank, social_rank, volunteer_rank];
   if (new Set(ranks).size !== 4 || ranks.some(r => r < 1 || r > 4)) {
     return res.status(400).json({ message: '排名需為 1~4 且不重複' });
   }
-
   try {
-    // 用 REPLACE INTO 讓重複設定時會更新
     await db.query(
       `INSERT INTO UserPreferences (userID, career_rank, arts_rank, social_rank, volunteer_rank)
        VALUES (?, ?, ?, ?, ?)
@@ -104,32 +88,42 @@ exports.setPreferences = async (req, res) => {
   }
 };
 
+// 【取得偏好設定】
+exports.getPreferences = async (req, res) => {
+  const userID = req.user.userID;
+  try {
+    const [rows] = await db.query(
+      'SELECT * FROM UserPreferences WHERE userID = ?', [userID]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ message: '尚未設定偏好' });
+    }
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: '伺服器錯誤' });
+  }
+};
+
 // 【忘記密碼】
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
-
   try {
     const [rows] = await db.query('SELECT * FROM Users WHERE email = ?', [email]);
     if (rows.length === 0) {
-      // 安全起見，就算 email 不存在也說「已寄出」
       return res.json({ message: '若此 Email 存在，重設連結已寄出' });
     }
-
     const user = rows[0];
     const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 1000 * 60 * 30); // 30 分鐘後過期
-
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 30);
     await db.query(
       'INSERT INTO PasswordResetTokens (userID, token, expiresAt) VALUES (?, ?, ?)',
       [user.userID, token, expiresAt]
     );
-
-    // 寄信
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
     });
-
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
@@ -137,7 +131,6 @@ exports.forgotPassword = async (req, res) => {
       html: `<p>點此連結重設密碼（30分鐘內有效）：</p>
              <a href="http://localhost:3000/reset-password.html?token=${token}">重設密碼</a>`,
     });
-
     res.json({ message: '若此 Email 存在，重設連結已寄出' });
   } catch (err) {
     console.error(err);
@@ -148,27 +141,21 @@ exports.forgotPassword = async (req, res) => {
 // 【重設密碼】
 exports.resetPassword = async (req, res) => {
   const { token, newPassword } = req.body;
-
   if (!isValidPassword(newPassword)) {
     return res.status(400).json({ message: '密碼格式不符' });
   }
-
   try {
     const [rows] = await db.query(
       'SELECT * FROM PasswordResetTokens WHERE token = ? AND used = 0 AND expiresAt > NOW()',
       [token]
     );
-
     if (rows.length === 0) {
       return res.status(400).json({ message: 'Token 無效或已過期' });
     }
-
     const { userID, tokenID } = rows[0];
     const hashedPw = await bcrypt.hash(newPassword, 10);
-
     await db.query('UPDATE Users SET password = ? WHERE userID = ?', [hashedPw, userID]);
     await db.query('UPDATE PasswordResetTokens SET used = 1 WHERE tokenID = ?', [tokenID]);
-
     res.json({ message: '密碼重設成功' });
   } catch (err) {
     console.error(err);
@@ -176,54 +163,12 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
-// --- 以下為暫時補齊的空函數，確保路由不會報錯 ---
-
-// 取得偏好設定
-exports.getPreferences = async (req, res) => {
-  res.json({ message: "功能開發中" });
-};
-
-// 取得收藏列表
-exports.getFavorites = async (req, res) => {
-  res.json({ message: "功能開發中" });
-};
-
-// 新增收藏
-exports.addFavorite = async (req, res) => {
-  res.json({ message: "功能開發中" });
-};
-
-// 移除收藏
-exports.removeFavorite = async (req, res) => {
-  res.json({ message: "功能開發中" });
-};
-
-// 取得資料夾
-exports.getFolders = async (req, res) => {
-  res.json({ message: "功能開發中" });
-};
-
-// 建立資料夾
-exports.createFolder = async (req, res) => {
-  res.json({ message: "功能開發中" });
-};
-
-// 取得瀏覽紀錄
-exports.getHistory = async (req, res) => {
-  res.json({ message: "功能開發中" });
-};
-
-// 取得我的活動 (我發布的)
-exports.getMyEvents = async (req, res) => {
-  res.json({ message: "功能開發中" });
-};
-
 // 【取得我的活動】
 exports.getMyEvents = async (req, res) => {
   const userID = req.user.userID;
   try {
     const [events] = await db.query(
-      `SELECT * FROM Events WHERE organizerID = ? ORDER BY publishedAt DESC`,
+      'SELECT * FROM Events WHERE organizerID = ? ORDER BY publishedAt DESC',
       [userID]
     );
     res.json(events);
@@ -237,7 +182,6 @@ exports.getMyEvents = async (req, res) => {
 exports.getFavorites = async (req, res) => {
   const userID = req.user.userID;
   const { folderID } = req.query;
-
   try {
     let sql = `
       SELECT e.*, f.folderID, f.createdAt as favoritedAt
@@ -246,14 +190,11 @@ exports.getFavorites = async (req, res) => {
       WHERE f.userID = ?
     `;
     const params = [userID];
-
     if (folderID) {
       sql += ' AND f.folderID = ?';
       params.push(folderID);
     }
-
     sql += ' ORDER BY f.createdAt DESC';
-
     const [events] = await db.query(sql, params);
     res.json(events);
   } catch (err) {
@@ -266,10 +207,8 @@ exports.getFavorites = async (req, res) => {
 exports.addFavorite = async (req, res) => {
   const userID = req.user.userID;
   const { eventID } = req.params;
-  const { folderID } = req.body;
-
+  const folderID = req.body?.folderID || null;
   try {
-    // 檢查是否已收藏
     const [existing] = await db.query(
       'SELECT favoriteID FROM Favorites WHERE userID = ? AND eventID = ?',
       [userID, eventID]
@@ -277,7 +216,6 @@ exports.addFavorite = async (req, res) => {
     if (existing.length > 0) {
       return res.status(400).json({ message: '已經收藏過了' });
     }
-
     await db.query(
       'INSERT INTO Favorites (userID, eventID, folderID) VALUES (?, ?, ?)',
       [userID, eventID, folderID || null]
@@ -293,7 +231,6 @@ exports.addFavorite = async (req, res) => {
 exports.removeFavorite = async (req, res) => {
   const userID = req.user.userID;
   const { eventID } = req.params;
-
   try {
     await db.query(
       'DELETE FROM Favorites WHERE userID = ? AND eventID = ?',
@@ -309,7 +246,6 @@ exports.removeFavorite = async (req, res) => {
 // 【取得收藏資料夾】
 exports.getFolders = async (req, res) => {
   const userID = req.user.userID;
-
   try {
     const [folders] = await db.query(
       'SELECT * FROM FavoriteFolders WHERE userID = ? ORDER BY createdAt DESC',
@@ -326,11 +262,9 @@ exports.getFolders = async (req, res) => {
 exports.createFolder = async (req, res) => {
   const userID = req.user.userID;
   const { folderName } = req.body;
-
   if (!folderName) {
     return res.status(400).json({ message: '請輸入資料夾名稱' });
   }
-
   try {
     await db.query(
       'INSERT INTO FavoriteFolders (userID, folderName) VALUES (?, ?)',
@@ -346,7 +280,6 @@ exports.createFolder = async (req, res) => {
 // 【取得瀏覽紀錄】
 exports.getHistory = async (req, res) => {
   const userID = req.user.userID;
-
   try {
     const [events] = await db.query(
       `SELECT e.*, h.viewedAt
@@ -358,25 +291,6 @@ exports.getHistory = async (req, res) => {
       [userID]
     );
     res.json(events);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: '伺服器錯誤' });
-  }
-};
-
-// 【取得偏好設定】
-exports.getPreferences = async (req, res) => {
-  const userID = req.user.userID;
-
-  try {
-    const [rows] = await db.query(
-      'SELECT * FROM UserPreferences WHERE userID = ?',
-      [userID]
-    );
-    if (rows.length === 0) {
-      return res.status(404).json({ message: '尚未設定偏好' });
-    }
-    res.json(rows[0]);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: '伺服器錯誤' });

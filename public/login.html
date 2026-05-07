@@ -3,27 +3,35 @@
 <head>
     <link rel="stylesheet" href="auth.css">
 </head>
-  <div class="auth-container">
-    <h1>登入</h1>
+<body>
+  <div class="auth-wrapper">
+    <div class="auth-container">
+      <div class="auth-logo">🎯</div>
+      <h1>歡迎回來</h1>
+      <p class="auth-subtitle">登入你的帳號</p>
 
-    <div class="form-group">
-      <label>Email</label>
-      <input type="email" id="email" placeholder="輸入 Email">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="email" placeholder="name@example.com">
+      </div>
+
+      <div class="form-group">
+        <label>密碼</label>
+        <input type="password" id="password" placeholder="輸入密碼">
+      </div>
+
+      <button onclick="login()" style="margin-top:8px">登入</button>
+
+      <div class="auth-footer" style="margin-top:14px">
+        <a href="forgot-password.html">忘記密碼？</a>
+      </div>
+      <div class="auth-footer">
+        還沒有帳號？<a href="register.html"> 註冊</a>
+      </div>
+
+      <p id="message" class="message"></p>
     </div>
-
-    <div class="form-group">
-      <label>密碼</label>
-      <input type="password" id="password" placeholder="輸入密碼">
-    </div>
-
-    <button onclick="login()">登入</button>
-
-    <p class="forgot"><a href="forgot-password.html">忘記密碼？</a></p>
-    <p class="switch-page">還沒有帳號？<a href="register.html">註冊</a></p>
-
-    <p id="message" class="message"></p>
   </div>
-
   <script>
     async function login() {
       const email = document.getElementById('email').value;

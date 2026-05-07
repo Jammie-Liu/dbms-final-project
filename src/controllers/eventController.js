@@ -12,6 +12,7 @@ const categoryRankMap = {
 exports.getEvents = async (req, res) => {
   const userID = req.query.userID; // 前端帶上 userID 來取得個人化排序
   const sortBy = req.query.sortBy; // 'latest' | 'registering' | 'mostFavorited'
+  const category = req.query.category;
 
   try {
     let prefs = null;
@@ -45,6 +46,15 @@ exports.getEvents = async (req, res) => {
       orderSQL = `(${categoryWeightSQL}) + (${registrationWeight}) DESC, e.publishedAt DESC`;
     }
 
+    let whereSQL = `e.status = 'approved' AND e.auditStatus = 'approved'`;
+    const params = [];
+
+    if (category) {
+      whereSQL += ` AND e.category = ?`;
+      params.push(category);
+    }
+
+
     const [events] = await db.query(`
       SELECT e.*,
         COUNT(DISTINCT f.favoriteID) AS favoriteCount,
@@ -52,10 +62,10 @@ exports.getEvents = async (req, res) => {
       FROM Events e
       LEFT JOIN Favorites f ON e.eventID = f.eventID
       LEFT JOIN Reviews r ON e.eventID = r.eventID
-      WHERE e.status = 'approved' AND e.auditStatus = 'approved'
+      WHERE ${whereSQL}
       GROUP BY e.eventID
       ORDER BY ${orderSQL}
-    `);
+    `, params);
 
     res.json(events);
   } catch (err) {

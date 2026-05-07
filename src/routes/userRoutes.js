@@ -12,9 +12,9 @@ router.post('/reset-password', userController.resetPassword);
 // 需要登入的路由（加上 verifyToken middleware）
 router.post('/preferences', verifyToken, userController.setPreferences);
 router.get('/preferences', verifyToken, userController.getPreferences);
-router.get('/favorites', verifyToken, userController.getFavorites);
 router.get('/favorites/folders', verifyToken, userController.getFolders);
 router.post('/favorites/folders', verifyToken, userController.createFolder);
+router.get('/favorites', verifyToken, userController.getFavorites);
 router.post('/favorites/:eventID', verifyToken, userController.addFavorite);
 router.delete('/favorites/:eventID', verifyToken, userController.removeFavorite);
 router.get('/history', verifyToken, userController.getHistory);
