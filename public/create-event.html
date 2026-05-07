@@ -7,54 +7,54 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="header">
-    <button class="back-btn" onclick="history.back()">← 返回</button>
-    <h2>新增活動</h2>
-    <div></div>
-  </div>
-
+  <div class="main-area">
+    <div class="top-bar">
+    <h2>➕ Create Event</h2>
+    </div>
+    
   <div class="form-container">
+    
     <div class="form-group">
-      <label>活動分類 *</label>
+      <label>Event Category *</label>
       <select id="category">
-        <option value="">請選擇</option>
-        <option value="career">🎓 職涯與學術成長</option>
-        <option value="arts">🎨 藝文與生活體驗</option>
-        <option value="social">🎉 社團與社交娛樂</option>
-        <option value="volunteer">🤝 志願服務與社會參與</option>
+        <option value="">Please select</option>
+        <option value="career">🎓 Career & Academic Development</option>
+        <option value="arts">🎨 Arts & Lifestyle Experience</option>
+        <option value="social">🎉 Club & Social Entertainment</option>
+        <option value="volunteer">🤝 Volunteer Service & Social Engagement</option>
       </select>
     </div>
 
     <div class="form-group">
-      <label>活動標題 *</label>
-      <input type="text" id="title" placeholder="輸入活動標題">
+      <label>Event Title *</label>
+      <input type="text" id="title" placeholder="Enter event title">
     </div>
 
     <div class="form-group">
-      <label>活動時間 *</label>
+      <label>Event Time *</label>
       <input type="datetime-local" id="eventTime">
     </div>
 
     <div class="form-group">
-      <label>活動地點 *</label>
-      <input type="text" id="location" placeholder="輸入地點">
+      <label>Event Location *</label>
+      <input type="text" id="location" placeholder="Enter location">
     </div>
 
     <div class="form-group">
-      <label>活動說明 *</label>
-      <textarea id="description" rows="5" placeholder="輸入活動說明"></textarea>
+      <label>Event Description *</label>
+      <textarea id="description" rows="5" placeholder="Enter event description"></textarea>
     </div>
 
     <hr>
-    <p class="section-title">選填資訊</p>
+    <p class="section-title">Optional Information</p>
 
     <div class="form-group">
-      <label>報名截止時間</label>
+      <label>Registration Deadline</label>
       <input type="datetime-local" id="registrationDeadline">
     </div>
 
     <div class="form-group">
-      <label>報名連結</label>
+      <label>Registration Link</label>
       <input type="url" id="registrationLink" placeholder="https://...">
     </div>
 
@@ -64,25 +64,29 @@
     </div>
 
     <div class="form-group">
-      <label>費用（元）</label>
-      <input type="number" id="fee" placeholder="0 代表免費" min="0">
+      <label>Fee（NT$）</label>
+      <input type="number" id="fee" placeholder="0 means free" min="0">
     </div>
 
     <div class="form-group checkbox-group">
-      <label><input type="checkbox" id="hasMeal"> 附餐食</label>
-      <label><input type="checkbox" id="hasGift"> 附贈品</label>
+      <label><input type="checkbox" id="hasMeal"> Has Meal</label>
+      <label><input type="checkbox" id="hasGift"> Has Gift</label>
     </div>
 
     <div class="form-group">
-      <label>活動圖片</label>
+      <label>Event Image</label>
       <input type="file" id="imageFile" accept="image/*">
       <p class="hint">圖片上傳功能開發中，可先填圖片網址</p>
       <input type="url" id="imageURL" placeholder="或貼上圖片網址">
     </div>
 
-    <button onclick="createEvent()">送出審核</button>
+    <button onclick="createEvent()">Send</button>
     <p id="message" class="message"></p>
   </div>
+  </div>
+</div>
+</div>
+  <script src="sidebar.js"></script>
 
   <script>
     const token = localStorage.getItem('token');

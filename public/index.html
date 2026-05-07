@@ -8,47 +8,147 @@
 </head>
 <body>
 
-  <!-- Header -->
-  <div class="header">
-    <span class="header-brand">🎯 學生活動資訊平台</span>
-    <div class="header-right">
-      <input class="header-search" type="text" id="searchInput" placeholder="搜尋活動...">
-      <button class="header-btn" onclick="searchEvents()">🔍</button>
-      <button class="header-btn add" onclick="window.location.href='create-event.html'">＋</button>
-      <span class="welcome-chip" id="welcomeText"></span>
+  <!-- 左側側邊欄 -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">🎯學生活動資訊平台</div>
+
+    <nav class="sidebar-nav">
+      <p class="nav-label">MAIN MENU</p>
+      <a href="index.html" class="nav-item active">
+        <span>🏠</span> Home
+      </a>
+      
+      <a href="create-event.html" class="nav-item">
+        <span>➕</span> Create Event
+      </a>
+      <a href="history.html" class="nav-item">
+        <span>🕐</span> History
+      </a>
+      <a href="favorites.html" class="nav-item">
+        <span>❤️</span> Favorites
+      </a>
+      <a href="my-events.html" class="nav-item">
+        <span>📋</span> My Events
+      </a>
+      <a id="adminLink" href="admin/index.html" class="nav-item" style="display:none">
+        <span>⚙️</span> 管理員
+      </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="user-chip">
+        <div class="user-avatar" id="userAvatar"></div>
+        <div>
+          <p id="welcomeText" style="font-weight:600;font-size:14px"></p>
+          <p style="font-size:12px;color:var(--text-tertiary)">學生</p>
+        </div>
+      </div>
       <button class="logout-btn" onclick="logout()">登出</button>
     </div>
-  </div>
+  </aside>
 
-  <!-- 分類篩選 -->
-  <div class="filter-bar">
-    <button class="category-btn filter-btn active" onclick="setCategory('', this)">全部</button>
-    <button class="category-btn filter-btn" onclick="setCategory('career', this)">🎓 職涯</button>
-    <button class="category-btn filter-btn" onclick="setCategory('arts', this)">🎨 藝文</button>
-    <button class="category-btn filter-btn" onclick="setCategory('social', this)">🎉 社交</button>
-    <button class="category-btn filter-btn" onclick="setCategory('volunteer', this)">🤝 志工</button>
-  </div>
+  <!-- 中間主要內容 -->
+  <main class="main-area">
 
-  <!-- ✅ 這個一定要有！ -->
-  <div class="main-content">
+    <!-- 頂部搜尋欄 -->
+    <div class="top-bar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input id="searchInput" class="top-search" type="text"
+          placeholder="Search activities, clubs, or events...">
+      </div>
+      <div class="top-bar-right">
+        <button class="icon-btn">🔔</button>
+        <button class="icon-btn">❓</button>
+      </div>
+    </div>
+
+    <!-- 標題 -->
+    <div class="stream-header">
+      <div>
+        <h1>Activity Stream</h1>
+        <p>Explore all activities, and enrich your life.</p>
+      </div>
+
+      <!-- 分類篩選 -->
+      <div class="category-tabs">
+        <button class="tab-btn active" data-cat="" onclick="setCategory('', this)">All</button>
+        <button class="tab-btn" data-cat="career" onclick="setCategory('career', this)">🎓 Career</button>
+        <button class="tab-btn" data-cat="arts" onclick="setCategory('arts', this)">🎨 Arts</button>
+        <button class="tab-btn" data-cat="social" onclick="setCategory('social', this)">🎉 Social</button>
+        <button class="tab-btn" data-cat="volunteer" onclick="setCategory('volunteer', this)">🤝 Volunteer</button>
+      </div>
+    </div>
+
+    <!-- 排序列 -->
+    <div class="sort-bar">
+      <button class="sort-btn active" onclick="setSort('default', this)">Default</button>
+      <button class="sort-btn" onclick="setSort('latest', this)">Latest</button>
+      <button class="sort-btn" onclick="setSort('registering', this)">Registering</button>
+      <button class="sort-btn" onclick="setSort('mostFavorited', this)">Hot</button>
+    </div>
+
+    <!-- 活動列表 -->
     <div id="eventList" class="event-grid"></div>
-  </div>
 
-  <!-- 下方 Bar -->
-  <div class="bottom-bar">
-    <button onclick="window.location.href='index.html'">
-      <span class="bar-icon">🏠</span>首頁
-    </button>
-    <button onclick="window.location.href='favorites.html'">
-      <span class="bar-icon">❤️</span>收藏
-    </button>
-    <button onclick="window.location.href='history.html'">
-      <span class="bar-icon">🕐</span>紀錄
-    </button>
-    <button onclick="window.location.href='my-events.html'">
-      <span class="bar-icon">📋</span>我的活動
-    </button>
-  </div>
+  </main>
+
+  <!-- 右側資訊欄 -->
+  <aside class="right-panel">
+
+    <div class="panel-card">
+      <h3>📈 熱門標籤</h3>
+      <div id="trendingList">
+        <div class="trending-item">
+          <div>
+            <p class="trending-tag">#職涯博覽會</p>
+            <p class="trending-sub">1.2k 學生關注</p>
+          </div>
+          <span>›</span>
+        </div>
+        <div class="trending-item">
+          <div>
+            <p class="trending-tag">#校園社交</p>
+            <p class="trending-sub">850 則貼文</p>
+          </div>
+          <span>›</span>
+        </div>
+        <div class="trending-item">
+          <div>
+            <p class="trending-tag">#冬季徵才</p>
+            <p class="trending-sub">11/1 前報名</p>
+          </div>
+          <span>›</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-card">
+      <h3>🔔 近期提醒</h3>
+      <div class="reminder-item">
+        <div class="reminder-icon warning">⚠️</div>
+        <div>
+          <p class="reminder-title">報名截止提醒</p>
+          <p class="reminder-sub">3 小時後・明德館</p>
+        </div>
+      </div>
+      <div class="reminder-item">
+        <div class="reminder-icon info">🕐</div>
+        <div>
+          <p class="reminder-title">社團會議即將開始</p>
+          <p class="reminder-sub">45 分鐘後・402 室</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-card new-activity-card"
+      onclick="window.location.href='create-event.html'">
+      <h3>✨ 舉辦你的活動</h3>
+      <p>找不到想要的活動？自己舉辦社團活動或讀書會！</p>
+      <button class="create-btn">新增活動</button>
+    </div>
+
+  </aside>
 
   <script src="script.js"></script>
 </body>

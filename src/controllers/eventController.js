@@ -36,23 +36,28 @@ exports.getEvents = async (req, res) => {
 
     let orderSQL = '';
     if (sortBy === 'latest') {
-      orderSQL = `e.publishedAt * 5 DESC, (${categoryWeightSQL}) DESC`;
+    // 最新發布：直接用發布時間排序
+    orderSQL = `e.publishedAt DESC`;
     } else if (sortBy === 'registering') {
-      orderSQL = `(${registrationWeight}) * 5 DESC, (${categoryWeightSQL}) DESC`;
+    // 報名中：報名未截止的排前面，同樣狀態再按發布時間
+    orderSQL = `(${registrationWeight}) DESC, e.publishedAt DESC`;
     } else if (sortBy === 'mostFavorited') {
-      orderSQL = `favoriteCount * 5 DESC, (${categoryWeightSQL}) DESC`;
+  // 收藏最多：收藏數排前面
+  orderSQL = `favoriteCount DESC, e.publishedAt DESC`;
     } else {
-      // 預設：分類權重 + 報名未過期 + 發布時間近
-      orderSQL = `(${categoryWeightSQL}) + (${registrationWeight}) DESC, e.publishedAt DESC`;
-    }
+    // 預設：分類權重 + 報名未過期 + 發布時間近
+    orderSQL = `(${categoryWeightSQL}) + (${registrationWeight}) DESC, e.publishedAt DESC`;
+  }
 
     let whereSQL = `e.status = 'approved' AND e.auditStatus = 'approved'`;
     const params = [];
 
     if (category) {
-      whereSQL += ` AND e.category = ?`;
-      params.push(category);
-    }
+  const categories = category.split(',');
+  const placeholders = categories.map(() => '?').join(',');
+  whereSQL += ` AND e.category IN (${placeholders})`;
+  params.push(...categories);
+  }
 
 
     const [events] = await db.query(`

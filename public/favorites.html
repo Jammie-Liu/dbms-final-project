@@ -7,22 +7,17 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="header">
-    <h2>❤️ 我的收藏</h2>
-    <button onclick="createFolder()" class="add-btn">＋</button>
+  <div class="main-area">
+  <div class="top-bar">
+    <h2>❤️ Favorites</h2>
+    <button onclick="createFolder()" class="tab-btn">＋ New Folder</button>
   </div>
+  <div id="folderList" style="margin-bottom:20px"></div>
+  <div id="favoriteList" class="event-grid"></div>
+</div>
 
-  <div class="main-content" style="margin-top:70px">
-    <div id="folderList" style="margin-bottom:20px"></div>
-    <div id="favoriteList" class="event-grid"><p>載入中...</p></div>
-  </div>
-
-  <div class="bottom-bar">
-    <button onclick="window.location.href='index.html'">🏠 首頁</button>
-    <button onclick="window.location.href='favorites.html'">❤️ 我的收藏</button>
-    <button onclick="window.location.href='history.html'">🕐 瀏覽紀錄</button>
-    <button onclick="window.location.href='my-events.html'">📋 我的活動</button>
-  </div>
+ 
+  <script src="sidebar.js"></script>
 
   <script>
     const token = localStorage.getItem('token');

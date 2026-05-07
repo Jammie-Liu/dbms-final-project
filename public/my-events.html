@@ -7,24 +7,21 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="header">
-    <button class="back-btn" onclick="history.back()">← 返回</button>
-    <h2>我的活動</h2>
-    <div></div>
+  <div class="main-area">
+  <div class="top-bar">
+    <h2>📋 My Events</h2>
   </div>
+  <div id="myEventList" class="event-grid"></div>
+</div>
 
   <div class="main-content" style="margin-top:70px">
     <div id="myEventList" class="event-grid">
-      <p>載入中...</p>
+      
     </div>
   </div>
 
-  <div class="bottom-bar">
-    <button onclick="window.location.href='index.html'">🏠 首頁</button>
-    <button onclick="window.location.href='favorites.html'">❤️ 我的收藏</button>
-    <button onclick="window.location.href='history.html'">🕐 瀏覽紀錄</button>
-    <button onclick="window.location.href='my-events.html'">📋 我的活動</button>
-  </div>
+
+  <script src="sidebar.js"></script>
 
   <script>
     const token = localStorage.getItem('token');

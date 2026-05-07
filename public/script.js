@@ -12,6 +12,24 @@ document.getElementById('welcomeText').textContent = `Hi, ${username}`;
 let currentSort = 'default';
 let currentCategory = '';
 
+// 顯示使用者名稱首字作為頭像
+const avatar = document.getElementById('userAvatar');
+if (avatar && username) {
+  avatar.textContent = username.charAt(0).toUpperCase();
+}
+
+// 管理員才顯示管理員連結
+const role = localStorage.getItem('role');
+if (role === 'admin') {
+  const adminLink = document.getElementById('adminLink');
+  if (adminLink) adminLink.style.display = 'flex';
+}
+
+// 搜尋框 focus
+function focusSearch() {
+  document.getElementById('searchInput').focus();
+}
+
 // 載入活動
 let favoritedEventIDs = new Set(); // 全域變數存收藏的 eventID
 
@@ -198,18 +216,47 @@ async function reportEvent(eventID, reason) {
 
 // 排序
 function setSort(sortBy, btn) {
-    currentSort = sortBy;
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    loadEvents(currentSort, '', currentCategory);
+  currentSort = sortBy;
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadEvents(currentSort, '', [...selectedCategories].join(','));
 }
 
 // 分類篩選
+// 用 Set 存目前選中的分類
+let selectedCategories = new Set();
+
 function setCategory(category, btn) {
-    currentCategory = category;
-    document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+  // 點「全部」
+  if (category === '') {
+    selectedCategories.clear();
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    loadEvents(currentSort, '', currentCategory);
+    loadEvents(currentSort, '', '');
+    return;
+  }
+
+  // 點分類按鈕時，先把「全部」取消
+  const allBtn = document.querySelector('.tab-btn[data-cat=""]');
+  if (allBtn) allBtn.classList.remove('active');
+
+  // 切換該分類的選中狀態
+  if (selectedCategories.has(category)) {
+    selectedCategories.delete(category);
+    btn.classList.remove('active');
+  } else {
+    selectedCategories.add(category);
+    btn.classList.add('active');
+  }
+
+  // 如果全部都取消了，回到「全部」
+  if (selectedCategories.size === 0) {
+    if (allBtn) allBtn.classList.add('active');
+    loadEvents(currentSort, '', '');
+    return;
+  }
+
+  loadEvents(currentSort, '', [...selectedCategories].join(','));
 }
 
 // 搜尋
@@ -223,11 +270,6 @@ document.getElementById('searchInput').addEventListener('keypress', function (e)
     if (e.key === 'Enter') searchEvents();
 });
 
-// 登出
-function logout() {
-    localStorage.clear();
-    window.location.href = 'login.html';
-}
 
 // 初始載入
 loadEvents();
