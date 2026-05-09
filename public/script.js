@@ -191,29 +191,40 @@ async function toggleFavorite(eventID, el, e) {
   }
 }
 
-// 檢舉
+let reportTargetEventID = null;
+
 function showReportMenu(eventID) {
-  const reasons = ['inappropriate', 'violence', 'fraud', 'misinformation'];
-  const labels = ['不當內容', '暴力', '詐騙', '不實資訊'];
-  const reason = prompt(`檢舉原因：\n1. 不當內容\n2. 暴力\n3. 詐騙\n4. 不實資訊\n\n請輸入數字(1-4)：`);
-  if (!reason) return;
-  const idx = parseInt(reason) - 1;
-  if (idx >= 0 && idx < reasons.length) {
-    reportEvent(eventID, reasons[idx]);
-  }
+  reportTargetEventID = eventID;
+  document.querySelectorAll('input[name="reportReason"]').forEach(r => r.checked = false);
+  document.getElementById('reportPopup').style.display = 'flex';
 }
 
-async function reportEvent(eventID, reason) {
+function closeReportPopup() {
+  document.getElementById('reportPopup').style.display = 'none';
+  reportTargetEventID = null;
+}
+
+async function submitReport() {
+  const selected = document.querySelector('input[name="reportReason"]:checked');
+  if (!selected) {
+    alert('請選擇檢舉原因！');
+    return;
+  }
+
   try {
-    const res = await fetch(`/api/reports/${eventID}`, {
+    const res = await fetch(`/api/reports/${reportTargetEventID}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({ reason })
+      body: JSON.stringify({ reason: selected.value })
     });
-    if (res.ok) alert('檢舉已送出');
+
+    if (res.ok) {
+      closeReportPopup();
+      alert('檢舉已送出，感謝你的回報！');
+    }
   } catch (err) {
     console.error(err);
   }
@@ -370,5 +381,27 @@ async function loadEventsWithFilter({ keyword, date, location, fee, hasMeal, has
     console.error(err);
   }
 }
+
+function showDeleteFolder() {
+  document.getElementById('deleteFolderPopup').style.display = 'flex';
+}
+
+function closeDeleteFolder() {
+  document.getElementById('deleteFolderPopup').style.display = 'none';
+}
+
+async function confirmDeleteFolder() {
+  await fetch(`/api/users/favorites/folders/${currentFolderID}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+
+  closeDeleteFolder();
+  currentFolderID = null;
+  document.getElementById('deleteFolderBtn').style.display = 'none';
+  loadFolders();
+  loadFavorites();
+}
+
 // 初始載入
 loadEvents();

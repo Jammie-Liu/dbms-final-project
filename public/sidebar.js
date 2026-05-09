@@ -42,7 +42,7 @@ function renderSidebar() {
         </a>
         ${role === 'admin' ? `
         <a href="admin/index.html" class="nav-item ${currentPage === 'index.html' && window.location.pathname.includes('admin') ? 'active' : ''}">
-          <span>⚙️</span> 管理員
+          <span>⚙️</span> Admin
         </a>` : ''}
       </nav>
 

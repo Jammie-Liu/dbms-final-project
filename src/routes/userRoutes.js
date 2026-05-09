@@ -19,5 +19,6 @@ router.post('/favorites/:eventID', verifyToken, userController.addFavorite);
 router.delete('/favorites/:eventID', verifyToken, userController.removeFavorite);
 router.get('/history', verifyToken, userController.getHistory);
 router.get('/my-events', verifyToken, userController.getMyEvents);
+router.delete('/favorites/folders/:folderID', verifyToken, userController.deleteFolder);
 
 module.exports = router;

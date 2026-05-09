@@ -7,33 +7,21 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<!-- 左側側邊欄 -->
+
+  <!-- 左側側邊欄 -->
   <aside class="sidebar">
     <div class="sidebar-logo">🎯學生活動資訊平台</div>
-
     <nav class="sidebar-nav">
       <p class="nav-label">MAIN MENU</p>
-      <a href="index.html" class="nav-item active">
-        <span>🏠</span> Home
-      </a>
-      
-      <a href="create-event.html" class="nav-item">
-        <span>➕</span> Create Event
-      </a>
-      <a href="history.html" class="nav-item">
-        <span>🕐</span> History
-      </a>
-      <a href="favorites.html" class="nav-item">
-        <span>❤️</span> Favorites
-      </a>
-      <a href="my-events.html" class="nav-item">
-        <span>📋</span> My Events
-      </a>
+      <a href="index.html" class="nav-item active"><span>🏠</span> Home</a>
+      <a href="create-event.html" class="nav-item"><span>➕</span> Create Event</a>
+      <a href="history.html" class="nav-item"><span>🕐</span> History</a>
+      <a href="favorites.html" class="nav-item"><span>❤️</span> Favorites</a>
+      <a href="my-events.html" class="nav-item"><span>📋</span> My Events</a>
       <a id="adminLink" href="admin/index.html" class="nav-item" style="display:none">
         <span>⚙️</span> Admin
       </a>
     </nav>
-
     <div class="sidebar-bottom">
       <div class="user-chip">
         <div class="user-avatar" id="userAvatar"></div>
@@ -42,16 +30,18 @@
           <p style="font-size:12px;color:var(--text-tertiary)" id="roleText">學生</p>
         </div>
       </div>
-      <button class="logout-btn" onclick="localStorage.clear(); window.location.href='login.html';">登出</button>
+      <button class="logout-btn"
+        onclick="localStorage.clear(); window.location.href='login.html';">登出</button>
     </div>
   </aside>
 
   <!-- 中間主要內容 -->
   <main class="main-area">
 
-    <!-- 頂部搜尋欄 (已更新為最新版本) -->
+    <!-- 頂部搜尋欄 -->
     <div class="top-bar">
-      <div class="search-wrap" style="display:flex;align-items:center;gap:8px;max-width:500px;flex:1">
+      <div class="search-wrap"
+        style="display:flex;align-items:center;gap:8px;max-width:500px;flex:1">
         <div style="position:relative;flex:1">
           <span class="search-icon">🔍</span>
           <input id="searchInput" class="top-search" type="text"
@@ -73,30 +63,25 @@
       </div>
     </div>
 
-    <!-- 進階篩選面板 (保留三欄式樣式) -->
+    <!-- 進階篩選面板 -->
     <div id="filterPanel" style="display:none;background:white;border:1px solid var(--border);
       border-radius:var(--radius-md);padding:24px;margin-bottom:20px;
       box-shadow:var(--shadow-md)">
       <h3 style="margin-bottom:20px;font-size:15px;color:var(--text-secondary);
         font-weight:600;letter-spacing:0.5px">進階篩選</h3>
-
       <div style="display:grid;grid-template-columns:repeat(3,1fr) auto;gap:16px;align-items:end">
-
         <div class="form-group" style="margin:0">
           <label style="font-size:13px;margin-bottom:6px">📅 日期</label>
           <input type="date" id="filterDate">
         </div>
-
         <div class="form-group" style="margin:0">
           <label style="font-size:13px;margin-bottom:6px">📍 地點</label>
           <input type="text" id="filterLocation" placeholder="輸入地點">
         </div>
-
         <div class="form-group" style="margin:0">
           <label style="font-size:13px;margin-bottom:6px">💰 費用上限（NT$）</label>
           <input type="number" id="filterFee" placeholder="不限" min="0">
         </div>
-
         <div style="display:flex;flex-direction:column;gap:10px;padding-bottom:2px">
           <label style="display:flex;align-items:center;gap:8px;font-size:13px;
             cursor:pointer;white-space:nowrap">
@@ -111,15 +96,11 @@
             🎁 附贈品
           </label>
         </div>
-
       </div>
-
       <div style="display:flex;gap:10px;margin-top:20px;padding-top:16px;
         border-top:1px solid var(--border)">
-        <button onclick="applyFilter()"
-          style="width:auto;padding:9px 24px">套用篩選</button>
-        <button onclick="clearFilter()"
-          style="width:auto;padding:9px 24px;background:var(--bg);
+        <button onclick="applyFilter()" style="width:auto;padding:9px 24px">套用篩選</button>
+        <button onclick="clearFilter()" style="width:auto;padding:9px 24px;background:var(--bg);
           color:var(--text-primary);border:1.5px solid var(--border)">清除</button>
       </div>
     </div>
@@ -130,8 +111,6 @@
         <h1>Activity Stream</h1>
         <p>Explore all activities, and enrich your life.</p>
       </div>
-
-      <!-- 分類篩選 -->
       <div class="category-tabs">
         <button class="tab-btn active" data-cat="" onclick="setCategory('', this)">All</button>
         <button class="tab-btn" data-cat="career" onclick="setCategory('career', this)">🎓 Career</button>
@@ -156,28 +135,105 @@
 
   <!-- 右側資訊欄 -->
   <aside class="right-panel">
-    <!-- ... (保留原本內容) ... -->
     <div class="panel-card">
       <h3>📈 熱門標籤</h3>
       <div id="trendingList">
         <div class="trending-item">
-          <div><p class="trending-tag">#職涯博覽會</p><p class="trending-sub">1.2k 學生關注</p></div>
+          <div>
+            <p class="trending-tag">#職涯博覽會</p>
+            <p class="trending-sub">1.2k 學生關注</p>
+          </div>
           <span>›</span>
         </div>
         <div class="trending-item">
-          <div><p class="trending-tag">#校園社交</p><p class="trending-sub">850 則貼文</p></div>
+          <div>
+            <p class="trending-tag">#校園社交</p>
+            <p class="trending-sub">850 則貼文</p>
+          </div>
           <span>›</span>
         </div>
       </div>
     </div>
 
-    <div class="panel-card new-activity-card" onclick="window.location.href='create-event.html'">
+    <div class="panel-card new-activity-card"
+      onclick="window.location.href='create-event.html'">
       <h3>✨ 舉辦你的活動</h3>
       <p>找不到想要的活動？自己舉辦社團活動 or 讀書會！</p>
       <button class="create-btn">新增活動</button>
     </div>
   </aside>
-  
+
+  <!-- 檢舉 popup -->
+  <div id="reportPopup" class="popup-overlay"
+    style="display:none;align-items:center;justify-content:center">
+    <div class="popup-box" style="border-radius:var(--radius-xl);max-width:400px;width:90%">
+      <div class="popup-handle"></div>
+      <h3 style="margin-bottom:6px">檢舉活動</h3>
+      <p style="color:var(--text-secondary);font-size:14px;margin-bottom:20px">
+        請選擇檢舉原因
+      </p>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <label class="report-option">
+          <input type="radio" name="reportReason" value="inappropriate">
+          <div class="report-option-content">
+            <span class="report-icon">🔞</span>
+            <div>
+              <p style="font-weight:500;font-size:14px">色情／不當內容</p>
+              <p style="font-size:12px;color:var(--text-tertiary)">包含不適當或露骨的內容</p>
+            </div>
+          </div>
+        </label>
+
+        <label class="report-option">
+          <input type="radio" name="reportReason" value="violence">
+          <div class="report-option-content">
+            <span class="report-icon">⚠️</span>
+            <div>
+              <p style="font-weight:500;font-size:14px">暴力</p>
+              <p style="font-size:12px;color:var(--text-tertiary)">包含暴力或危險內容</p>
+            </div>
+          </div>
+        </label>
+
+        <label class="report-option">
+          <input type="radio" name="reportReason" value="fraud">
+          <div class="report-option-content">
+            <span class="report-icon">💰</span>
+            <div>
+              <p style="font-weight:500;font-size:14px">詐騙</p>
+              <p style="font-size:12px;color:var(--text-tertiary)">疑似詐騙或惡意活動</p>
+            </div>
+          </div>
+        </label>
+
+        <label class="report-option">
+          <input type="radio" name="reportReason" value="misinformation">
+          <div class="report-option-content">
+            <span class="report-icon">❌</span>
+            <div>
+              <p style="font-weight:500;font-size:14px">不實資訊</p>
+              <p style="font-size:12px;color:var(--text-tertiary)">內容與實際情況不符</p>
+            </div>
+          </div>
+        </label>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:20px;
+        padding-top:16px;border-top:1px solid var(--border)">
+        <button onclick="closeReportPopup()" style="
+          flex:1;margin:0;background:var(--bg);
+          color:var(--text-primary);border:1.5px solid var(--border)">
+          取消
+        </button>
+        <button onclick="submitReport()" style="
+          flex:1;margin:0;background:var(--danger);color:white">
+          送出檢舉
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>

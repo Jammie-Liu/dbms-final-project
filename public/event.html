@@ -1,47 +1,117 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Activity Details</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+  body {
+    display: block !important;
+    background: var(--bg);
+  }
+  .header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 60px;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    z-index: 100;
+  }
+  .form-container {
+    margin: 100px auto 40px !important;
+    max-width: 640px !important;
+    width: 90% !important;
+  }
+</style>
+  
+
 </head>
+
 <body>
   <div class="header">
-    <button class="back-btn" onclick="history.back()">← 返回</button>
-    <h2>Activity Details</h2>
-    <div></div>
-  </div>
+  <button class="back-btn" onclick="history.back()">← 返回</button>
+  <h2>Activity Details</h2>
+  <div style="width:80px"></div>
+</div>
+  
 
-  <div class="event-container" id="eventDetail">
+  <div class="form-container" id="eventDetail">
     <p>Loading...</p>
   </div>
 
   <!-- 評價 popup -->
-  <div id="reviewPopup" class="popup-overlay" style="display:none">
-    <div class="popup-box">
-      <h3>新增評價</h3>
-      <p id="attendedQuestion">你是否有參加過此活動？</p>
-      <div id="attendedBtns">
-        <button onclick="confirmAttended(true)">Yes</button>
-        <button onclick="confirmAttended(false)" class="cancel-btn">No</button>
-      </div>
-      <div id="reviewForm" style="display:none">
-        <div class="star-row">
-          <span>評分：</span>
-          <span class="star" onclick="setStar(1)">⭐</span>
-          <span class="star" onclick="setStar(2)">⭐</span>
-          <span class="star" onclick="setStar(3)">⭐</span>
-          <span class="star" onclick="setStar(4)">⭐</span>
-          <span class="star" onclick="setStar(5)">⭐</span>
-          <span id="starCount">0 顆</span>
+  <div id="reviewPopup" class="popup-overlay" style="display:none;align-items:center;justify-content:center">
+    <div class="popup-box" style="
+      border-radius:var(--radius-xl);max-width:440px;
+      width:90%">
+
+      <div class="popup-handle"></div>
+
+      <!-- Step 1：詢問是否參加 -->
+      <div id="attendedStep">
+        <h3 style="margin-bottom:8px">新增評價</h3>
+        <p style="color:var(--text-secondary);font-size:14px;margin-bottom:24px">
+          你是否有參加過此活動？
+        </p>
+        <div style="display:flex;gap:12px">
+          <button onclick="confirmAttended(true)" style="flex:1;margin:0">
+            ✅ Yes，我參加過
+          </button>
+          <button onclick="confirmAttended(false)" style="
+            flex:1;margin:0;background:var(--bg);
+            color:var(--text-primary);border:1.5px solid var(--border)">
+            ❌ No
+          </button>
         </div>
-        <textarea id="reviewContent" rows="4" placeholder="寫下你的評價..."></textarea>
-        <div class="popup-footer">
-          <button onclick="closePopup()">取消</button>
-          <button onclick="submitReview()">完成</button>
+      </div>
+
+      <!-- Step 2：填寫評價 -->
+      <div id="reviewStep" style="display:none">
+        <h3 style="margin-bottom:20px">填寫評價</h3>
+
+        <div style="margin-bottom:20px">
+          <p style="font-size:14px;font-weight:500;margin-bottom:12px">評分</p>
+          <div style="display:flex;gap:8px" id="starContainer">
+            <span class="star-item" data-val="1" onclick="setStar(1)"
+              style="font-size:32px;cursor:pointer;opacity:0.3;transition:all 0.15s">⭐</span>
+            <span class="star-item" data-val="2" onclick="setStar(2)"
+              style="font-size:32px;cursor:pointer;opacity:0.3;transition:all 0.15s">⭐</span>
+            <span class="star-item" data-val="3" onclick="setStar(3)"
+              style="font-size:32px;cursor:pointer;opacity:0.3;transition:all 0.15s">⭐</span>
+            <span class="star-item" data-val="4" onclick="setStar(4)"
+              style="font-size:32px;cursor:pointer;opacity:0.3;transition:all 0.15s">⭐</span>
+            <span class="star-item" data-val="5" onclick="setStar(5)"
+              style="font-size:32px;cursor:pointer;opacity:0.3;transition:all 0.15s">⭐</span>
+          </div>
+          <p id="starLabel" style="font-size:13px;color:var(--text-tertiary);margin-top:8px">
+            請選擇星數
+          </p>
+        </div>
+
+        <div style="margin-bottom:20px">
+          <p style="font-size:14px;font-weight:500;margin-bottom:8px">評論（選填）</p>
+          <textarea id="reviewContent" rows="4" placeholder="分享你的活動體驗..." style="resize:none"></textarea>
+        </div>
+
+        <div style="display:flex;gap:10px">
+          <button onclick="closePopup()" style="
+            flex:1;margin:0;background:var(--bg);
+            color:var(--text-primary);border:1.5px solid var(--border)">
+            取消
+          </button>
+          <button onclick="submitReview()" style="flex:1;margin:0">
+            送出評價
+          </button>
         </div>
       </div>
+
     </div>
   </div>
 
@@ -70,7 +140,10 @@
         : '無截止時間';
 
       document.getElementById('eventDetail').innerHTML = `
-        ${event.imageURL ? `<img src="${event.imageURL}" style="width:100%;border-radius:12px;margin-bottom:16px">` : ''}
+        ${event.imageURL
+          ? `<img src="${event.imageURL}" style="width:100%;border-radius:12px;margin-bottom:16px">`
+          : ''
+        }
         <span class="category-tag">${categoryMap[event.category]}</span>
         <h2 style="margin:10px 0">${event.title}</h2>
         <p>📅 ${eventTime}</p>
@@ -79,20 +152,27 @@
         <p>⏰ 報名截止：${deadline}</p>
         ${event.hasMeal ? '<p>🍱 附餐食</p>' : ''}
         ${event.hasGift ? '<p>🎁 附贈品</p>' : ''}
-        ${event.hashtag ? `<p style="color:#6c63ff">${event.hashtag}</p>` : ''}
+        ${event.hashtag ? `<p style="color:var(--brand)">${event.hashtag}</p>` : ''}
         ${event.registrationLink
-          ? `<a href="${event.registrationLink}" target="_blank"><button style="margin-top:12px">立即報名</button></a>`
-          : ''}
+          ? `<a href="${event.registrationLink}" target="_blank">
+              <button style="margin-top:12px">立即報名</button>
+             </a>`
+          : ''
+        }
 
         <hr style="margin:20px 0">
         <h3>活動說明</h3>
         <p style="margin-top:8px;line-height:1.6">${event.description}</p>
 
         <hr style="margin:20px 0">
-        <h3>評價</h3>
-        <div id="reviewList">載入中...</div>
-        <button onclick="document.getElementById('reviewPopup').style.display='flex'"
-          style="margin-top:12px">新增評價</button>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h3>評價</h3>
+          <button onclick="document.getElementById('reviewPopup').style.display='flex'"
+            style="width:auto;padding:8px 16px;font-size:13px;margin:0">
+            ＋ 新增評價
+          </button>
+        </div>
+        <div id="reviewList" style="margin-top:12px">載入中...</div>
       `;
 
       loadReviews();
@@ -104,26 +184,25 @@
       const reviewList = document.getElementById('reviewList');
 
       if (!event.reviews || event.reviews.length === 0) {
-        reviewList.innerHTML = '<p style="color:#888">還沒有評價</p>';
+        reviewList.innerHTML = '<p style="color:var(--text-tertiary)">還沒有評價</p>';
         return;
       }
 
       reviewList.innerHTML = event.reviews.map(r => `
         <div class="review-card">
           <div class="review-top">
-            <span><b>${r.username}</b></span>
+            <span class="reviewer-name">${r.username}</span>
             <span>${r.stars ? '⭐'.repeat(r.stars) : '（未評分）'}</span>
           </div>
-          <p>${r.content || ''}</p>
+          <p style="font-size:14px;color:var(--text-secondary)">${r.content || ''}</p>
         </div>
       `).join('');
     }
 
     function confirmAttended(yes) {
-      document.getElementById('attendedBtns').style.display = 'none';
-      document.getElementById('attendedQuestion').style.display = 'none';
       if (yes) {
-        document.getElementById('reviewForm').style.display = 'block';
+        document.getElementById('attendedStep').style.display = 'none';
+        document.getElementById('reviewStep').style.display = 'block';
       } else {
         closePopup();
       }
@@ -131,19 +210,37 @@
 
     function setStar(n) {
       selectedStar = n;
-      document.getElementById('starCount').textContent = n + ' 顆';
+      const labels = ['', '很差', '普通', '還不錯', '很好', '非常好！'];
+      document.getElementById('starLabel').textContent = `${n} 顆星・${labels[n]}`;
+
+      document.querySelectorAll('.star-item').forEach(el => {
+        const val = parseInt(el.dataset.val);
+        el.style.opacity = val <= n ? '1' : '0.3';
+        el.style.transform = val <= n ? 'scale(1.1)' : 'scale(1)';
+      });
     }
 
     function closePopup() {
       document.getElementById('reviewPopup').style.display = 'none';
-      document.getElementById('attendedBtns').style.display = 'flex';
-      document.getElementById('attendedQuestion').style.display = 'block';
-      document.getElementById('reviewForm').style.display = 'none';
       selectedStar = 0;
+      document.getElementById('attendedStep').style.display = 'block';
+      document.getElementById('reviewStep').style.display = 'none';
+      document.getElementById('starLabel').textContent = '請選擇星數';
+      document.querySelectorAll('.star-item').forEach(el => {
+        el.style.opacity = '0.3';
+        el.style.transform = 'scale(1)';
+      });
+      document.getElementById('reviewContent').value = '';
     }
 
     async function submitReview() {
       const content = document.getElementById('reviewContent').value;
+
+      if (!selectedStar) {
+        alert('請選擇星數！');
+        return;
+      }
+
       const res = await fetch(`/api/events/${eventID}/review`, {
         method: 'POST',
         headers: {
@@ -152,7 +249,7 @@
         },
         body: JSON.stringify({
           hasAttended: true,
-          stars: selectedStar || null,
+          stars: selectedStar,
           content
         })
       });
@@ -167,4 +264,5 @@
     loadEvent();
   </script>
 </body>
+
 </html>

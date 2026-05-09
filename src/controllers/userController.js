@@ -297,3 +297,27 @@ exports.getHistory = async (req, res) => {
     res.status(500).json({ message: '伺服器錯誤' });
   }
 };
+
+exports.deleteFolder = async (req, res) => {
+  const userID = req.user.userID;
+  const { folderID } = req.params;
+
+  try {
+    // 先把資料夾內的活動移到無分類
+    await db.query(
+      'UPDATE Favorites SET folderID = NULL WHERE folderID = ? AND userID = ?',
+      [folderID, userID]
+    );
+
+    // 再刪除資料夾
+    await db.query(
+      'DELETE FROM FavoriteFolders WHERE folderID = ? AND userID = ?',
+      [folderID, userID]
+    );
+
+    res.json({ message: '資料夾已刪除' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: '伺服器錯誤' });
+  }
+};

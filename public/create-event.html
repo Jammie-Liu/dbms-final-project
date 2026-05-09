@@ -1,17 +1,15 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>新增活動</title>
   <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
   <div class="main-area">
     <div class="top-bar">
-      <h2>➕ Create Event</h2>
+      <h2 id="pageTitle">➕ Create Event</h2>
     </div>
 
     <div class="form-container">
@@ -62,7 +60,7 @@
 
       <div class="form-group">
         <label>Hashtag</label>
-        <input type="text" id="hashtag" placeholder="例：#職涯 #講座">
+        <input type="text" id="hashtag" placeholder="e.g. #career #workshop">
       </div>
 
       <div class="form-group">
@@ -77,38 +75,59 @@
 
       <div class="form-group">
         <label>Event Image</label>
-        <input type="file" id="imageFile" accept="image/*">
-        <p class="hint">圖片上傳功能開發中，可先填圖片網址</p>
-        <input type="url" id="imageURL" placeholder="或貼上圖片網址">
+        <div id="imageUploadArea" style="
+          border: 2px dashed var(--border);
+          border-radius: var(--radius-md);
+          padding: 24px;
+          text-align: center;
+          cursor: pointer;
+          transition: all var(--transition)"
+          onclick="document.getElementById('imageFile').click()"
+          ondragover="event.preventDefault(); this.style.borderColor='var(--brand)'"
+          ondragleave="this.style.borderColor='var(--border)'"
+          ondrop="handleDrop(event)">
+          <div id="uploadPlaceholder">
+            <p style="font-size:32px;margin-bottom:8px">📷</p>
+            <p style="font-size:14px;color:var(--text-secondary)">點擊或拖曳上傳圖片</p>
+            <p style="font-size:12px;color:var(--text-tertiary);margin-top:4px">
+              支援 JPG、PNG、WEBP，最大 5MB
+            </p>
+          </div>
+          <img id="imagePreview" style="display:none;max-width:100%;
+            border-radius:var(--radius-sm);max-height:200px">
+        </div>
+        <input type="file" id="imageFile" accept="image/*"
+          style="display:none" onchange="previewImage(event)">
+        <p id="uploadStatus" class="hint"></p>
       </div>
 
-      <button onclick="submitEvent()">Send</button>
+      <button id="submitBtn" onclick="submitEvent()">Send</button>
       <p id="message" class="message"></p>
     </div>
   </div>
-  <script src="sidebar.js"></script>
 
+  <script src="sidebar.js"></script>
   <script>
     const token = localStorage.getItem('token');
     if (!token) window.location.href = 'login.html';
 
-    // 判斷是新增還是修改
     const params = new URLSearchParams(window.location.search);
     const editID = params.get('edit');
+    let uploadedImageURL = null;
 
-    // 如果是修改模式，載入活動資料
+    // 修改模式
     if (editID) {
-      document.querySelector('h2').textContent = '✏️ Edit Event';
-      document.querySelector('button[onclick="submitEvent()"]').textContent = 'Save Changes';
+      document.getElementById('pageTitle').textContent = '✏️ Edit Event';
+      document.getElementById('submitBtn').textContent = 'Save Changes';
       loadEventData();
     }
 
+    // 載入活動資料（修改模式）
     async function loadEventData() {
       try {
         const res = await fetch(`/api/events/${editID}`);
         const event = await res.json();
 
-        // 填入表單
         document.getElementById('category').value = event.category;
         document.getElementById('title').value = event.title;
         document.getElementById('location').value = event.location;
@@ -118,30 +137,95 @@
         document.getElementById('hasGift').checked = event.hasGift === 1;
         document.getElementById('registrationLink').value = event.registrationLink || '';
         document.getElementById('hashtag').value = event.hashtag || '';
-        document.getElementById('imageURL').value = event.imageURL || '';
 
-        // 把時間轉成台灣時間的 datetime-local 格式
+        // 如果有舊圖片，顯示預覽
+        if (event.imageURL) {
+          uploadedImageURL = event.imageURL;
+          document.getElementById('imagePreview').src = event.imageURL;
+          document.getElementById('imagePreview').style.display = 'block';
+          document.getElementById('uploadPlaceholder').style.display = 'none';
+          document.getElementById('uploadStatus').textContent = '✅ 已有圖片';
+        }
+
+        // 時間轉換（UTC+8）
         function toLocalDatetimeString(dateStr) {
           const date = new Date(dateStr);
-          // 加上台灣時區偏移（UTC+8）
-          const offset = 8 * 60; // 分鐘
+          const offset = 8 * 60;
           const localDate = new Date(date.getTime() + offset * 60 * 1000);
           return localDate.toISOString().slice(0, 16);
         }
 
-        // 然後填入時間的地方改成用這個函數
         if (event.eventTime) {
           document.getElementById('eventTime').value = toLocalDatetimeString(event.eventTime);
         }
         if (event.registrationDeadline) {
           document.getElementById('registrationDeadline').value = toLocalDatetimeString(event.registrationDeadline);
         }
-
       } catch (err) {
         console.error('載入活動資料失敗', err);
       }
     }
 
+    // 圖片預覽
+    function previewImage(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        document.getElementById('imagePreview').src = e.target.result;
+        document.getElementById('imagePreview').style.display = 'block';
+        document.getElementById('uploadPlaceholder').style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+
+      uploadImage(file);
+    }
+
+    // 拖曳上傳
+    function handleDrop(event) {
+      event.preventDefault();
+      document.getElementById('imageUploadArea').style.borderColor = 'var(--border)';
+      const file = event.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) {
+        previewImage({ target: { files: [file] } });
+      }
+    }
+
+    // 上傳到 Cloudinary
+    async function uploadImage(file) {
+      const status = document.getElementById('uploadStatus');
+      status.textContent = '上傳中...';
+      status.style.color = 'var(--text-secondary)';
+
+      const formData = new FormData();
+      formData.append('image', file);
+
+      try {
+        const res = await fetch('/api/events/upload-image', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          uploadedImageURL = data.imageURL;
+          status.textContent = '✅ 上傳成功';
+          status.style.color = 'var(--success)';
+        } else {
+          status.textContent = '❌ 上傳失敗：' + data.message;
+          status.style.color = 'var(--danger)';
+        }
+      } catch (err) {
+        status.textContent = '❌ 上傳失敗，請重試';
+        status.style.color = 'var(--danger)';
+        console.error(err);
+      }
+    }
+
+    // 送出表單
     async function submitEvent() {
       const message = document.getElementById('message');
 
@@ -153,7 +237,7 @@
 
       if (!category || !title || !eventTime || !location || !description) {
         message.textContent = '請填寫所有必填欄位';
-        message.style.color = 'red';
+        message.className = 'message error';
         return;
       }
 
@@ -169,11 +253,10 @@
         fee: parseInt(document.getElementById('fee').value) || 0,
         hasMeal: document.getElementById('hasMeal').checked,
         hasGift: document.getElementById('hasGift').checked,
-        imageURL: document.getElementById('imageURL').value || null,
+        imageURL: uploadedImageURL || null,
       };
 
       try {
-        // 修改模式用 PUT，新增模式用 POST
         const url = editID ? `/api/events/${editID}` : '/api/events';
         const method = editID ? 'PUT' : 'POST';
 
@@ -190,18 +273,17 @@
 
         if (res.ok) {
           message.textContent = editID ? '活動已更新！' : '活動已送出，等待審核！';
-          message.style.color = 'green';
+          message.className = 'message success';
           setTimeout(() => window.location.href = 'my-events.html', 1500);
         } else {
           message.textContent = data.message;
-          message.style.color = 'red';
+          message.className = 'message error';
         }
       } catch (err) {
         message.textContent = '伺服器錯誤';
-        message.style.color = 'red';
+        message.className = 'message error';
       }
     }
   </script>
 </body>
-
 </html>

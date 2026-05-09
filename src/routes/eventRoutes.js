@@ -14,5 +14,14 @@ router.put('/:eventID', verifyToken, eventController.updateEvent);
 router.patch('/:eventID/cancel', verifyToken, eventController.cancelEvent);
 router.post('/:eventID/review', verifyToken, eventController.addReview);
 router.post('/:eventID/history', verifyToken, eventController.recordHistory);
+const { upload } = require('../lib/cloudinary');
+
+// 圖片上傳 API
+router.post('/upload-image', verifyToken, upload.single('image'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: '請選擇圖片' });
+  }
+  res.json({ imageURL: req.file.path }); // Cloudinary 回傳的 URL
+});
 
 module.exports = router;
