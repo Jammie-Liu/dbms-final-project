@@ -1,24 +1,56 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>管理員後台</title>
+  <title>Admin Dashboard</title>
   <link rel="stylesheet" href="../style.css">
 </head>
+
 <body>
-  <div class="header">
-    <h2>⚙️ 管理員後台</h2>
+  <div class="header" style="position:fixed;top:0;left:0;right:0;z-index:100;
+    background:white;border-bottom:1px solid var(--border);
+    display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:60px">
+    <div class="header">
+      <button class="back-btn" onclick="history.back()">← 返回</button>
+      <h2>⚙️ Admin Dashboard</h2>
+      <div></div>
+    </div>
     <button class="logout-btn" onclick="logout()">登出</button>
   </div>
 
-  <div class="filter-bar">
-    <button class="filter-btn active" onclick="setTab('pending', this)">待審核</button>
-    <button class="filter-btn" onclick="setTab('reported', this)">被檢舉</button>
+  <!-- Tab Bar -->
+  <div class="filter-bar" style="top:60px">
+    <button class="filter-btn active" onclick="setTab('pending', this)">📋 待審核</button>
+    <button class="filter-btn" onclick="setTab('reported', this)">🚨 被檢舉</button>
   </div>
 
-  <div class="main-content">
-    <div id="adminEventList" class="event-grid"><p>載入中...</p></div>
+  <!-- 活動列表 -->
+  <div style="margin-top:120px;padding:24px">
+    <div id="adminEventList" class="event-grid"></div>
+  </div>
+
+  <!-- View Detail Popup -->
+  <div id="detailPopup" class="popup-overlay" style="display:none;align-items:center">
+    <div class="popup-box" style="border-radius:var(--radius-xl);max-height:85vh;
+      overflow-y:auto;max-width:560px;width:90%">
+      <div id="detailContent"></div>
+      <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:20px;
+        padding-top:16px;border-top:1px solid var(--border)">
+        <button onclick="closeDetail()" class="btn-secondary" style="width:auto;padding:10px 24px">
+          關閉
+        </button>
+        <button id="rejectBtn" onclick="auditFromDetail('rejected')"
+          style="width:auto;padding:10px 24px;background:var(--danger);color:white">
+          不通過
+        </button>
+        <button id="approveBtn" onclick="auditFromDetail('approved')"
+          style="width:auto;padding:10px 24px;background:var(--success);color:white">
+          通過
+        </button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -27,10 +59,11 @@
     if (!token || role !== 'admin') window.location.href = '../login.html';
 
     let currentTab = 'pending';
+    let currentEventID = null;
 
     async function loadEvents() {
       const list = document.getElementById('adminEventList');
-      list.innerHTML = '<p>載入中...</p>';
+      list.innerHTML = '<p class="no-events">載入中...</p>';
 
       const url = currentTab === 'pending'
         ? '/api/admin/events/pending'
@@ -42,7 +75,7 @@
       const events = await res.json();
 
       if (events.length === 0) {
-        list.innerHTML = '<p class="no-events">沒有待處理的活動</p>';
+        list.innerHTML = '<p class="no-events"><span class="no-events-icon">✅</span>沒有待處理的活動</p>';
         return;
       }
 
@@ -50,29 +83,105 @@
         <div class="event-card">
           <div class="card-top">
             ${currentTab === 'reported'
-              ? `<span class="status-tag cancelled">${event.reportReasons}</span>`
-              : '<span class="status-tag soon">待審核</span>'
-            }
+          ? `<div style="display:flex;gap:6px;flex-wrap:wrap">
+                  ${event.reportReasons.split(',').map(r => `
+                    <span class="status-tag cancelled">${getReasonLabel(r)}</span>
+                  `).join('')}
+                </div>`
+          : `<span class="status-tag soon">待審核</span>`
+        }
           </div>
           <div class="card-body">
             <h3>${event.title}</h3>
             <p>👤 ${event.organizerName}</p>
             <p>📅 ${new Date(event.eventTime).toLocaleDateString('zh-TW')}</p>
             <p>📍 ${event.location}</p>
-            <p style="margin-top:8px">${event.description}</p>
             ${currentTab === 'reported'
-              ? `<p style="color:red">被檢舉 ${event.reportCount} 次</p>`
-              : ''
-            }
-            <div class="audit-btns">
-              <button onclick="audit(${event.eventID}, 'approved')"
-                style="background:#4caf50">通過</button>
-              <button onclick="audit(${event.eventID}, 'rejected')"
-                style="background:#f44336">不通過</button>
+          ? `<p style="color:var(--danger);font-size:13px;margin-top:4px">
+                  被檢舉 ${event.reportCount} 次
+                </p>`
+          : ''
+        }
+            <div style="margin-top:12px">
+              <button onclick="viewDetail(${event.eventID})"
+                style="width:auto;padding:8px 16px;background:var(--bg);
+                color:var(--text-primary);border:1.5px solid var(--border);font-size:13px">
+                👁️ View Detail
+              </button>
             </div>
           </div>
         </div>
       `).join('');
+    }
+
+    // 檢舉原因中文標籤
+    function getReasonLabel(reason) {
+      const map = {
+        inappropriate: '不當內容',
+        violence: '暴力',
+        fraud: '詐騙',
+        misinformation: '不實資訊'
+      };
+      return map[reason.trim()] || reason;
+    }
+
+    // 查看詳細資訊
+    async function viewDetail(eventID) {
+      currentEventID = eventID;
+
+      const res = await fetch(`/api/events/${eventID}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const event = await res.json();
+
+      const categoryMap = {
+        career: '🎓 職涯與學術成長',
+        arts: '🎨 藝文與生活體驗',
+        social: '🎉 社團與社交娛樂',
+        volunteer: '🤝 志願服務與社會參與'
+      };
+
+      document.getElementById('detailContent').innerHTML = `
+        <h2 style="margin-bottom:16px">${event.title}</h2>
+        ${event.imageURL
+          ? `<img src="${event.imageURL}" style="width:100%;border-radius:12px;margin-bottom:16px">`
+          : ''
+        }
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+          <p>🗂️ ${categoryMap[event.category] || event.category}</p>
+          <p>👤 主辦人：${event.organizerName}</p>
+          <p>📅 活動時間：${new Date(event.eventTime).toLocaleString('zh-TW')}</p>
+          <p>📍 地點：${event.location}</p>
+          <p>💰 費用：${event.fee > 0 ? event.fee + ' 元' : '免費'}</p>
+          ${event.registrationDeadline
+          ? `<p>⏰ 報名截止：${new Date(event.registrationDeadline).toLocaleString('zh-TW')}</p>`
+          : ''
+        }
+          ${event.registrationLink
+          ? `<p>🔗 報名連結：<a href="${event.registrationLink}" target="_blank">${event.registrationLink}</a></p>`
+          : ''
+        }
+          ${event.hashtag ? `<p>🏷️ ${event.hashtag}</p>` : ''}
+          ${event.hasMeal ? '<p>🍱 附餐食</p>' : ''}
+          ${event.hasGift ? '<p>🎁 附贈品</p>' : ''}
+        </div>
+        <hr style="margin-bottom:16px">
+        <h3 style="margin-bottom:8px">活動說明</h3>
+        <p style="line-height:1.7">${event.description}</p>
+      `;
+
+      document.getElementById('detailPopup').style.display = 'flex';
+    }
+
+    function closeDetail() {
+      document.getElementById('detailPopup').style.display = 'none';
+      currentEventID = null;
+    }
+
+    async function auditFromDetail(result) {
+      if (!currentEventID) return;
+      await audit(currentEventID, result);
+      closeDetail();
     }
 
     async function audit(eventID, result) {
@@ -102,4 +211,5 @@
     loadEvents();
   </script>
 </body>
+
 </html>

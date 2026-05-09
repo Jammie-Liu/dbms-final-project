@@ -54,21 +54,26 @@ function renderSidebar() {
             <p style="font-size:12px;color:var(--text-tertiary)">${role === 'admin' ? '管理員' : '學生'}</p>
           </div>
         </div>
-        <button class="logout-btn" onclick="logout()">登出</button>
+        <button class="logout-btn" onclick="window.logout()">登出</button>
       </div>
     </aside>
   `;
-
   // 插入到 body 最前面
   document.body.insertAdjacentHTML('afterbegin', sidebarHTML);
 
   // 讓 body 變成 flex 三欄佈局
   document.body.style.display = 'flex';
+
 }
 
-function logout() {
+window.logout = function() {
   localStorage.clear();
-  window.location.href = 'login.html';
+  const path = window.location.pathname;
+  if (path.includes('/admin/')) {
+    window.location.href = '../login.html';
+  } else {
+    window.location.href = '/login.html';  // ← 用絕對路徑
+  }
 }
 
 // 頁面載入時自動執行

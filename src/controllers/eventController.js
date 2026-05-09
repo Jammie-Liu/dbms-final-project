@@ -91,7 +91,13 @@ exports.searchEvents = async (req, res) => {
       conditions.push('(e.title LIKE ? OR e.description LIKE ? OR e.hashtag LIKE ?)');
       params.push(`%${keyword}%`, `%${keyword}%`, `%${keyword}%`);
     }
-    if (category) { conditions.push('e.category = ?'); params.push(category); }
+    if (category) {
+  const categories = category.split(',');
+  const placeholders = categories.map(() => '?').join(',');
+  conditions.push(`e.category IN (${placeholders})`);
+  params.push(...categories);
+}
+    //if (category) { conditions.push('e.category = ?'); params.push(category); }
     if (date) { conditions.push('DATE(e.eventTime) = ?'); params.push(date); }
     if (location) { conditions.push('e.location LIKE ?'); params.push(`%${location}%`); }
     if (fee !== undefined) { conditions.push('e.fee <= ?'); params.push(fee); }

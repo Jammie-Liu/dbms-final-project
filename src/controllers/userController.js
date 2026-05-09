@@ -56,8 +56,9 @@ exports.login = async (req, res) => {
       userID: user.userID,
       username: user.username,
       role: user.role,
-      hasPreferences: prefs.length > 0,
+      hasPreferences: user.role === 'admin' ? true : prefs.length > 0,
     });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: '伺服器錯誤' });

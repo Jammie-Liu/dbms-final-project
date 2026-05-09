@@ -2,15 +2,18 @@
 const token = localStorage.getItem('token');
 const userID = localStorage.getItem('userID');
 const username = localStorage.getItem('username');
+const role = localStorage.getItem('role');
 
 if (!token) {
-    window.location.href = 'login.html';
+  window.location.href = 'login.html';
 }
 
-document.getElementById('welcomeText').textContent = `Hi, ${username}`;
+const welcomeEl = document.getElementById('welcomeText');
+if (welcomeEl) welcomeEl.textContent = `Hi, ${username}`;
 
-let currentSort = 'default';
-let currentCategory = '';
+// 顯示角色
+const roleText = document.getElementById('roleText');
+if (roleText) roleText.textContent = role === 'admin' ? '管理員' : '學生';
 
 // 顯示使用者名稱首字作為頭像
 const avatar = document.getElementById('userAvatar');
@@ -19,11 +22,13 @@ if (avatar && username) {
 }
 
 // 管理員才顯示管理員連結
-const role = localStorage.getItem('role');
 if (role === 'admin') {
   const adminLink = document.getElementById('adminLink');
   if (adminLink) adminLink.style.display = 'flex';
 }
+
+let currentSort = 'default';
+let currentCategory = '';
 
 // 搜尋框 focus
 function focusSearch() {
@@ -93,9 +98,9 @@ function renderEventCard(event, index) {
       </div>
 
       ${event.imageURL
-        ? `<img src="${event.imageURL}" class="card-img" alt="活動圖片">`
-        : `<div class="card-img-placeholder">${categoryLabel.emoji}</div>`
-      }
+      ? `<img src="${event.imageURL}" class="card-img" alt="活動圖片">`
+      : `<div class="card-img-placeholder">${categoryLabel.emoji}</div>`
+    }
 
       <div class="card-body">
         <span class="category-tag">${categoryLabel.emoji} ${categoryLabel.text}</span>
@@ -116,37 +121,37 @@ function renderEventCard(event, index) {
 
 // 活動狀態標籤
 function getStatusLabel(event) {
-    if (event.status === 'cancelled') return { text: '已取消', class: 'cancelled' };
-    const now = new Date();
-    const eventTime = new Date(event.eventTime);
-    const deadline = event.registrationDeadline ? new Date(event.registrationDeadline) : null;
+  if (event.status === 'cancelled') return { text: '已取消', class: 'cancelled' };
+  const now = new Date();
+  const eventTime = new Date(event.eventTime);
+  const deadline = event.registrationDeadline ? new Date(event.registrationDeadline) : null;
 
-    if (eventTime < now) return { text: '已結束', class: 'ended' };
-    if (deadline && deadline < now) return { text: '報名截止', class: 'closed' };
-    if (eventTime - now < 1000 * 60 * 60 * 24 * 3) return { text: '即將開始', class: 'soon' };
-    return { text: '報名中', class: 'open' };
+  if (eventTime < now) return { text: '已結束', class: 'ended' };
+  if (deadline && deadline < now) return { text: '報名截止', class: 'closed' };
+  if (eventTime - now < 1000 * 60 * 60 * 24 * 3) return { text: '即將開始', class: 'soon' };
+  return { text: '報名中', class: 'open' };
 }
 
 // 分類標籤
 function getCategoryLabel(category) {
-    const map = {
-        career: { text: '職涯與學術成長', emoji: '🎓' },
-        arts: { text: '藝文與生活體驗', emoji: '🎨' },
-        social: { text: '社團與社交娛樂', emoji: '🎉' },
-        volunteer: { text: '志願服務與社會參與', emoji: '🤝' },
-    };
-    return map[category] || { text: category, emoji: '📌' };
+  const map = {
+    career: { text: '職涯與學術成長', emoji: '🎓' },
+    arts: { text: '藝文與生活體驗', emoji: '🎨' },
+    social: { text: '社團與社交娛樂', emoji: '🎉' },
+    volunteer: { text: '志願服務與社會參與', emoji: '🤝' },
+  };
+  return map[category] || { text: category, emoji: '📌' };
 }
 
 // 點進活動詳細頁 + 記錄瀏覽紀錄
 async function goToEvent(eventID) {
-    try {
-        await fetch(`/api/events/${eventID}/history`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-    } catch (err) { }
-    window.location.href = `event.html?id=${eventID}`;
+  try {
+    await fetch(`/api/events/${eventID}/history`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+  } catch (err) { }
+  window.location.href = `event.html?id=${eventID}`;
 }
 
 // 收藏
@@ -188,30 +193,30 @@ async function toggleFavorite(eventID, el, e) {
 
 // 檢舉
 function showReportMenu(eventID) {
-    const reasons = ['inappropriate', 'violence', 'fraud', 'misinformation'];
-    const labels = ['不當內容', '暴力', '詐騙', '不實資訊'];
-    const reason = prompt(`檢舉原因：\n1. 不當內容\n2. 暴力\n3. 詐騙\n4. 不實資訊\n\n請輸入數字(1-4)：`);
-    if (!reason) return;
-    const idx = parseInt(reason) - 1;
-    if (idx >= 0 && idx < reasons.length) {
-        reportEvent(eventID, reasons[idx]);
-    }
+  const reasons = ['inappropriate', 'violence', 'fraud', 'misinformation'];
+  const labels = ['不當內容', '暴力', '詐騙', '不實資訊'];
+  const reason = prompt(`檢舉原因：\n1. 不當內容\n2. 暴力\n3. 詐騙\n4. 不實資訊\n\n請輸入數字(1-4)：`);
+  if (!reason) return;
+  const idx = parseInt(reason) - 1;
+  if (idx >= 0 && idx < reasons.length) {
+    reportEvent(eventID, reasons[idx]);
+  }
 }
 
 async function reportEvent(eventID, reason) {
-    try {
-        const res = await fetch(`/api/reports/${eventID}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ reason })
-        });
-        if (res.ok) alert('檢舉已送出');
-    } catch (err) {
-        console.error(err);
-    }
+  try {
+    const res = await fetch(`/api/reports/${eventID}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ reason })
+    });
+    if (res.ok) alert('檢舉已送出');
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 // 排序
@@ -223,11 +228,9 @@ function setSort(sortBy, btn) {
 }
 
 // 分類篩選
-// 用 Set 存目前選中的分類
 let selectedCategories = new Set();
 
 function setCategory(category, btn) {
-  // 點「全部」
   if (category === '') {
     selectedCategories.clear();
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -236,11 +239,9 @@ function setCategory(category, btn) {
     return;
   }
 
-  // 點分類按鈕時，先把「全部」取消
   const allBtn = document.querySelector('.tab-btn[data-cat=""]');
   if (allBtn) allBtn.classList.remove('active');
 
-  // 切換該分類的選中狀態
   if (selectedCategories.has(category)) {
     selectedCategories.delete(category);
     btn.classList.remove('active');
@@ -249,7 +250,6 @@ function setCategory(category, btn) {
     btn.classList.add('active');
   }
 
-  // 如果全部都取消了，回到「全部」
   if (selectedCategories.size === 0) {
     if (allBtn) allBtn.classList.add('active');
     loadEvents(currentSort, '', '');
@@ -259,17 +259,116 @@ function setCategory(category, btn) {
   loadEvents(currentSort, '', [...selectedCategories].join(','));
 }
 
-// 搜尋
 function searchEvents() {
-    const keyword = document.getElementById('searchInput').value;
-    loadEvents(currentSort, keyword, currentCategory);
+  const keyword = document.getElementById('searchInput').value;
+
+  if (keyword) {
+    // 有關鍵字就用 search API（支援 LIKE）
+    loadEventsWithFilter({
+      keyword,
+      date: document.getElementById('filterDate')?.value || '',
+      location: document.getElementById('filterLocation')?.value || '',
+      fee: document.getElementById('filterFee')?.value || '',
+      hasMeal: document.getElementById('filterMeal')?.checked || false,
+      hasGift: document.getElementById('filterGift')?.checked || false,
+      category: [...selectedCategories].join(',')
+    });
+  } else {
+    // 沒有關鍵字就用一般載入
+    loadEvents(currentSort, '', [...selectedCategories].join(','));
+  }
+}
+
+function toggleSearchBtn() {
+  const input = document.getElementById('searchInput');
+  const btn = document.getElementById('searchBtn');
+  if (input.value.trim()) {
+    btn.disabled = false;
+    btn.style.background = 'var(--brand)';
+    btn.style.color = 'white';
+    btn.style.cursor = 'pointer';
+  } else {
+    btn.disabled = true;
+    btn.style.background = 'var(--border)';
+    btn.style.color = 'var(--text-tertiary)';
+    btn.style.cursor = 'not-allowed';
+  }
 }
 
 // Enter 鍵搜尋
 document.getElementById('searchInput').addEventListener('keypress', function (e) {
-    if (e.key === 'Enter') searchEvents();
+  if (e.key === 'Enter') searchEvents();
 });
 
+// 切換篩選面板
+function toggleFilter() {
+  const panel = document.getElementById('filterPanel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
 
+// 套用篩選
+function applyFilter() {
+  const keyword = document.getElementById('searchInput').value;
+  const date = document.getElementById('filterDate').value;
+  const location = document.getElementById('filterLocation').value;
+  const fee = document.getElementById('filterFee').value;
+  const hasMeal = document.getElementById('filterMeal').checked;
+  const hasGift = document.getElementById('filterGift').checked;
+  const category = [...selectedCategories].join(',');
+
+  loadEventsWithFilter({ keyword, date, location, fee, hasMeal, hasGift, category });
+}
+
+// 清除篩選
+function clearFilter() {
+  document.getElementById('filterDate').value = '';
+  document.getElementById('filterLocation').value = '';
+  document.getElementById('filterFee').value = '';
+  document.getElementById('filterMeal').checked = false;
+  document.getElementById('filterGift').checked = false;
+  loadEvents(currentSort, '', [...selectedCategories].join(','));
+}
+
+// 帶條件載入活動
+async function loadEventsWithFilter({ keyword, date, location, fee, hasMeal, hasGift, category }) {
+  const eventList = document.getElementById('eventList');
+  eventList.innerHTML = '<p class="no-events"><span class="no-events-icon">⏳</span>載入中...</p>';
+
+  try {
+    let url = `/api/events/search?`;
+    const params = new URLSearchParams();
+
+    if (keyword) params.append('keyword', keyword);
+    if (date) params.append('date', date);
+    if (location) params.append('location', location);
+    if (fee) params.append('fee', fee);
+    if (hasMeal) params.append('hasMeal', 'true');
+    if (hasGift) params.append('hasGift', 'true');
+    if (category) params.append('category', category);
+
+    url += params.toString();
+
+    const [eventsRes, favRes] = await Promise.all([
+      fetch(url),
+      fetch('/api/users/favorites', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+    ]);
+
+    const events = await eventsRes.json();
+    const favData = await favRes.json();
+    favoritedEventIDs = new Set(favData.map(f => f.eventID));
+
+    if (events.length === 0) {
+      eventList.innerHTML = '<p class="no-events"><span class="no-events-icon">🔍</span>找不到符合條件的活動</p>';
+      return;
+    }
+
+    eventList.innerHTML = events.map((event, i) => renderEventCard(event, i)).join('');
+  } catch (err) {
+    eventList.innerHTML = '<p class="no-events">載入失敗，請重試</p>';
+    console.error(err);
+  }
+}
 // 初始載入
 loadEvents();

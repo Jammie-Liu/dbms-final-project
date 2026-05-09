@@ -7,8 +7,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-  <!-- 左側側邊欄 -->
+<!-- 左側側邊欄 -->
   <aside class="sidebar">
     <div class="sidebar-logo">🎯學生活動資訊平台</div>
 
@@ -31,7 +30,7 @@
         <span>📋</span> My Events
       </a>
       <a id="adminLink" href="admin/index.html" class="nav-item" style="display:none">
-        <span>⚙️</span> 管理員
+        <span>⚙️</span> Admin
       </a>
     </nav>
 
@@ -40,26 +39,88 @@
         <div class="user-avatar" id="userAvatar"></div>
         <div>
           <p id="welcomeText" style="font-weight:600;font-size:14px"></p>
-          <p style="font-size:12px;color:var(--text-tertiary)">學生</p>
+          <p style="font-size:12px;color:var(--text-tertiary)" id="roleText">學生</p>
         </div>
       </div>
-      <button class="logout-btn" onclick="logout()">登出</button>
+      <button class="logout-btn" onclick="localStorage.clear(); window.location.href='login.html';">登出</button>
     </div>
   </aside>
 
   <!-- 中間主要內容 -->
   <main class="main-area">
 
-    <!-- 頂部搜尋欄 -->
+    <!-- 頂部搜尋欄 (已更新為最新版本) -->
     <div class="top-bar">
-      <div class="search-wrap">
-        <span class="search-icon">🔍</span>
-        <input id="searchInput" class="top-search" type="text"
-          placeholder="Search activities, clubs, or events...">
+      <div class="search-wrap" style="display:flex;align-items:center;gap:8px;max-width:500px;flex:1">
+        <div style="position:relative;flex:1">
+          <span class="search-icon">🔍</span>
+          <input id="searchInput" class="top-search" type="text"
+            placeholder="Search activities, clubs, or events..."
+            oninput="toggleSearchBtn()">
+        </div>
+        <button id="searchBtn" onclick="searchEvents()" disabled style="
+          width:auto;padding:8px 20px;font-size:13px;margin:0;
+          border-radius:20px;white-space:nowrap;
+          background:var(--border);color:var(--text-tertiary);
+          cursor:not-allowed;transition:all var(--transition)">
+          Search
+        </button>
       </div>
       <div class="top-bar-right">
+        <button class="icon-btn" onclick="toggleFilter()">⚙️</button>
         <button class="icon-btn">🔔</button>
         <button class="icon-btn">❓</button>
+      </div>
+    </div>
+
+    <!-- 進階篩選面板 (保留三欄式樣式) -->
+    <div id="filterPanel" style="display:none;background:white;border:1px solid var(--border);
+      border-radius:var(--radius-md);padding:24px;margin-bottom:20px;
+      box-shadow:var(--shadow-md)">
+      <h3 style="margin-bottom:20px;font-size:15px;color:var(--text-secondary);
+        font-weight:600;letter-spacing:0.5px">進階篩選</h3>
+
+      <div style="display:grid;grid-template-columns:repeat(3,1fr) auto;gap:16px;align-items:end">
+
+        <div class="form-group" style="margin:0">
+          <label style="font-size:13px;margin-bottom:6px">📅 日期</label>
+          <input type="date" id="filterDate">
+        </div>
+
+        <div class="form-group" style="margin:0">
+          <label style="font-size:13px;margin-bottom:6px">📍 地點</label>
+          <input type="text" id="filterLocation" placeholder="輸入地點">
+        </div>
+
+        <div class="form-group" style="margin:0">
+          <label style="font-size:13px;margin-bottom:6px">💰 費用上限（NT$）</label>
+          <input type="number" id="filterFee" placeholder="不限" min="0">
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px;padding-bottom:2px">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;
+            cursor:pointer;white-space:nowrap">
+            <input type="checkbox" id="filterMeal"
+              style="width:16px;height:16px;accent-color:var(--brand)">
+            🍱 附餐食
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;
+            cursor:pointer;white-space:nowrap">
+            <input type="checkbox" id="filterGift"
+              style="width:16px;height:16px;accent-color:var(--brand)">
+            🎁 附贈品
+          </label>
+        </div>
+
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:20px;padding-top:16px;
+        border-top:1px solid var(--border)">
+        <button onclick="applyFilter()"
+          style="width:auto;padding:9px 24px">套用篩選</button>
+        <button onclick="clearFilter()"
+          style="width:auto;padding:9px 24px;background:var(--bg);
+          color:var(--text-primary);border:1.5px solid var(--border)">清除</button>
       </div>
     </div>
 
@@ -95,61 +156,28 @@
 
   <!-- 右側資訊欄 -->
   <aside class="right-panel">
-
+    <!-- ... (保留原本內容) ... -->
     <div class="panel-card">
       <h3>📈 熱門標籤</h3>
       <div id="trendingList">
         <div class="trending-item">
-          <div>
-            <p class="trending-tag">#職涯博覽會</p>
-            <p class="trending-sub">1.2k 學生關注</p>
-          </div>
+          <div><p class="trending-tag">#職涯博覽會</p><p class="trending-sub">1.2k 學生關注</p></div>
           <span>›</span>
         </div>
         <div class="trending-item">
-          <div>
-            <p class="trending-tag">#校園社交</p>
-            <p class="trending-sub">850 則貼文</p>
-          </div>
-          <span>›</span>
-        </div>
-        <div class="trending-item">
-          <div>
-            <p class="trending-tag">#冬季徵才</p>
-            <p class="trending-sub">11/1 前報名</p>
-          </div>
+          <div><p class="trending-tag">#校園社交</p><p class="trending-sub">850 則貼文</p></div>
           <span>›</span>
         </div>
       </div>
     </div>
 
-    <div class="panel-card">
-      <h3>🔔 近期提醒</h3>
-      <div class="reminder-item">
-        <div class="reminder-icon warning">⚠️</div>
-        <div>
-          <p class="reminder-title">報名截止提醒</p>
-          <p class="reminder-sub">3 小時後・明德館</p>
-        </div>
-      </div>
-      <div class="reminder-item">
-        <div class="reminder-icon info">🕐</div>
-        <div>
-          <p class="reminder-title">社團會議即將開始</p>
-          <p class="reminder-sub">45 分鐘後・402 室</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="panel-card new-activity-card"
-      onclick="window.location.href='create-event.html'">
+    <div class="panel-card new-activity-card" onclick="window.location.href='create-event.html'">
       <h3>✨ 舉辦你的活動</h3>
-      <p>找不到想要的活動？自己舉辦社團活動或讀書會！</p>
+      <p>找不到想要的活動？自己舉辦社團活動 or 讀書會！</p>
       <button class="create-btn">新增活動</button>
     </div>
-
   </aside>
-
+  
   <script src="script.js"></script>
 </body>
 </html>

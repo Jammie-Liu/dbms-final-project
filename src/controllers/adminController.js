@@ -11,6 +11,7 @@ exports.getPendingEvents = async (req, res) => {
     );
     res.json(events);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: '伺服器錯誤' });
   }
 };
@@ -19,8 +20,11 @@ exports.getPendingEvents = async (req, res) => {
 exports.getReportedEvents = async (req, res) => {
   try {
     const [events] = await db.query(
-      `SELECT e.*, GROUP_CONCAT(DISTINCT r.reason) AS reportReasons, COUNT(r.reportID) AS reportCount
+      `SELECT e.*, u.username AS organizerName,
+        GROUP_CONCAT(DISTINCT r.reason) AS reportReasons,
+        COUNT(r.reportID) AS reportCount
        FROM Events e
+       JOIN Users u ON e.organizerID = u.userID
        JOIN Reports r ON e.eventID = r.eventID
        WHERE r.isVerified IS NULL
        GROUP BY e.eventID
@@ -28,6 +32,7 @@ exports.getReportedEvents = async (req, res) => {
     );
     res.json(events);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: '伺服器錯誤' });
   }
 };
@@ -38,12 +43,23 @@ exports.auditEvent = async (req, res) => {
   const { result } = req.body; // 'approved' | 'rejected'
 
   try {
+    // 更新活動審核狀態
     await db.query(
-      "UPDATE Events SET auditStatus = ?, status = ? WHERE eventID = ?",
+      `UPDATE Events SET auditStatus = ?, status = ? WHERE eventID = ?`,
       [result, result === 'approved' ? 'approved' : 'rejected', eventID]
     );
+
+    // 同時把該活動的檢舉都標記為已審核
+    // 通過 → isVerified = 0（不屬實）
+    // 不通過 → isVerified = 1（屬實）
+    await db.query(
+      `UPDATE Reports SET isVerified = ? WHERE eventID = ?`,
+      [result === 'rejected' ? 1 : 0, eventID]
+    );
+
     res.json({ message: '審核完成' });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: '伺服器錯誤' });
   }
 };
@@ -51,7 +67,7 @@ exports.auditEvent = async (req, res) => {
 // 確認檢舉是否屬實
 exports.verifyReport = async (req, res) => {
   const { reportID } = req.params;
-  const { isVerified } = req.body; // true | false
+  const { isVerified } = req.body;
 
   try {
     await db.query(
@@ -60,6 +76,7 @@ exports.verifyReport = async (req, res) => {
     );
     res.json({ message: '檢舉審核完成' });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: '伺服器錯誤' });
   }
 };

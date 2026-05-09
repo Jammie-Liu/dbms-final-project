@@ -1,98 +1,148 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>新增活動</title>
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
   <div class="main-area">
     <div class="top-bar">
-    <h2>➕ Create Event</h2>
-    </div>
-    
-  <div class="form-container">
-    
-    <div class="form-group">
-      <label>Event Category *</label>
-      <select id="category">
-        <option value="">Please select</option>
-        <option value="career">🎓 Career & Academic Development</option>
-        <option value="arts">🎨 Arts & Lifestyle Experience</option>
-        <option value="social">🎉 Club & Social Entertainment</option>
-        <option value="volunteer">🤝 Volunteer Service & Social Engagement</option>
-      </select>
+      <h2>➕ Create Event</h2>
     </div>
 
-    <div class="form-group">
-      <label>Event Title *</label>
-      <input type="text" id="title" placeholder="Enter event title">
+    <div class="form-container">
+
+      <div class="form-group">
+        <label>Event Category *</label>
+        <select id="category">
+          <option value="">Please select</option>
+          <option value="career">🎓 Career & Academic Development</option>
+          <option value="arts">🎨 Arts & Lifestyle Experience</option>
+          <option value="social">🎉 Club & Social Entertainment</option>
+          <option value="volunteer">🤝 Volunteer Service & Social Engagement</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Event Title *</label>
+        <input type="text" id="title" placeholder="Enter event title">
+      </div>
+
+      <div class="form-group">
+        <label>Event Time *</label>
+        <input type="datetime-local" id="eventTime">
+      </div>
+
+      <div class="form-group">
+        <label>Event Location *</label>
+        <input type="text" id="location" placeholder="Enter location">
+      </div>
+
+      <div class="form-group">
+        <label>Event Description *</label>
+        <textarea id="description" rows="5" placeholder="Enter event description"></textarea>
+      </div>
+
+      <hr>
+      <p class="section-title">Optional Information</p>
+
+      <div class="form-group">
+        <label>Registration Deadline</label>
+        <input type="datetime-local" id="registrationDeadline">
+      </div>
+
+      <div class="form-group">
+        <label>Registration Link</label>
+        <input type="url" id="registrationLink" placeholder="https://...">
+      </div>
+
+      <div class="form-group">
+        <label>Hashtag</label>
+        <input type="text" id="hashtag" placeholder="例：#職涯 #講座">
+      </div>
+
+      <div class="form-group">
+        <label>Fee（NT$）</label>
+        <input type="number" id="fee" placeholder="0 means free" min="0">
+      </div>
+
+      <div class="form-group checkbox-group">
+        <label><input type="checkbox" id="hasMeal"> Has Meal</label>
+        <label><input type="checkbox" id="hasGift"> Has Gift</label>
+      </div>
+
+      <div class="form-group">
+        <label>Event Image</label>
+        <input type="file" id="imageFile" accept="image/*">
+        <p class="hint">圖片上傳功能開發中，可先填圖片網址</p>
+        <input type="url" id="imageURL" placeholder="或貼上圖片網址">
+      </div>
+
+      <button onclick="submitEvent()">Send</button>
+      <p id="message" class="message"></p>
     </div>
-
-    <div class="form-group">
-      <label>Event Time *</label>
-      <input type="datetime-local" id="eventTime">
-    </div>
-
-    <div class="form-group">
-      <label>Event Location *</label>
-      <input type="text" id="location" placeholder="Enter location">
-    </div>
-
-    <div class="form-group">
-      <label>Event Description *</label>
-      <textarea id="description" rows="5" placeholder="Enter event description"></textarea>
-    </div>
-
-    <hr>
-    <p class="section-title">Optional Information</p>
-
-    <div class="form-group">
-      <label>Registration Deadline</label>
-      <input type="datetime-local" id="registrationDeadline">
-    </div>
-
-    <div class="form-group">
-      <label>Registration Link</label>
-      <input type="url" id="registrationLink" placeholder="https://...">
-    </div>
-
-    <div class="form-group">
-      <label>Hashtag</label>
-      <input type="text" id="hashtag" placeholder="例：#職涯 #講座">
-    </div>
-
-    <div class="form-group">
-      <label>Fee（NT$）</label>
-      <input type="number" id="fee" placeholder="0 means free" min="0">
-    </div>
-
-    <div class="form-group checkbox-group">
-      <label><input type="checkbox" id="hasMeal"> Has Meal</label>
-      <label><input type="checkbox" id="hasGift"> Has Gift</label>
-    </div>
-
-    <div class="form-group">
-      <label>Event Image</label>
-      <input type="file" id="imageFile" accept="image/*">
-      <p class="hint">圖片上傳功能開發中，可先填圖片網址</p>
-      <input type="url" id="imageURL" placeholder="或貼上圖片網址">
-    </div>
-
-    <button onclick="createEvent()">Send</button>
-    <p id="message" class="message"></p>
   </div>
-  </div>
-</div>
-</div>
   <script src="sidebar.js"></script>
 
   <script>
     const token = localStorage.getItem('token');
     if (!token) window.location.href = 'login.html';
 
-    async function createEvent() {
+    // 判斷是新增還是修改
+    const params = new URLSearchParams(window.location.search);
+    const editID = params.get('edit');
+
+    // 如果是修改模式，載入活動資料
+    if (editID) {
+      document.querySelector('h2').textContent = '✏️ Edit Event';
+      document.querySelector('button[onclick="submitEvent()"]').textContent = 'Save Changes';
+      loadEventData();
+    }
+
+    async function loadEventData() {
+      try {
+        const res = await fetch(`/api/events/${editID}`);
+        const event = await res.json();
+
+        // 填入表單
+        document.getElementById('category').value = event.category;
+        document.getElementById('title').value = event.title;
+        document.getElementById('location').value = event.location;
+        document.getElementById('description').value = event.description;
+        document.getElementById('fee').value = event.fee || 0;
+        document.getElementById('hasMeal').checked = event.hasMeal === 1;
+        document.getElementById('hasGift').checked = event.hasGift === 1;
+        document.getElementById('registrationLink').value = event.registrationLink || '';
+        document.getElementById('hashtag').value = event.hashtag || '';
+        document.getElementById('imageURL').value = event.imageURL || '';
+
+        // 把時間轉成台灣時間的 datetime-local 格式
+        function toLocalDatetimeString(dateStr) {
+          const date = new Date(dateStr);
+          // 加上台灣時區偏移（UTC+8）
+          const offset = 8 * 60; // 分鐘
+          const localDate = new Date(date.getTime() + offset * 60 * 1000);
+          return localDate.toISOString().slice(0, 16);
+        }
+
+        // 然後填入時間的地方改成用這個函數
+        if (event.eventTime) {
+          document.getElementById('eventTime').value = toLocalDatetimeString(event.eventTime);
+        }
+        if (event.registrationDeadline) {
+          document.getElementById('registrationDeadline').value = toLocalDatetimeString(event.registrationDeadline);
+        }
+
+      } catch (err) {
+        console.error('載入活動資料失敗', err);
+      }
+    }
+
+    async function submitEvent() {
       const message = document.getElementById('message');
 
       const category = document.getElementById('category').value;
@@ -123,8 +173,12 @@
       };
 
       try {
-        const res = await fetch('/api/events', {
-          method: 'POST',
+        // 修改模式用 PUT，新增模式用 POST
+        const url = editID ? `/api/events/${editID}` : '/api/events';
+        const method = editID ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+          method,
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
@@ -135,7 +189,7 @@
         const data = await res.json();
 
         if (res.ok) {
-          message.textContent = '活動已送出，等待審核！';
+          message.textContent = editID ? '活動已更新！' : '活動已送出，等待審核！';
           message.style.color = 'green';
           setTimeout(() => window.location.href = 'my-events.html', 1500);
         } else {
@@ -149,4 +203,5 @@
     }
   </script>
 </body>
+
 </html>
