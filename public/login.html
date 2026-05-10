@@ -24,7 +24,8 @@
         <label>Password</label>
         <input type="password" id="password" 
           autocomplete="current-password"
-          placeholder="輸入密碼">
+          placeholder="輸入密碼"
+          onkeypress="if(event.key === 'Enter') login()">
       </div>
 
       <button onclick="login()" style="margin-top:8px">Sign In</button>
