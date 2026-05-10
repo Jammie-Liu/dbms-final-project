@@ -112,6 +112,18 @@ CREATE TABLE PasswordResetTokens (
   FOREIGN KEY (userID) REFERENCES Users(userID)
 );
 
+-- 通知
+CREATE TABLE Notifications (
+  notificationID INT AUTO_INCREMENT PRIMARY KEY,
+  userID INT NOT NULL,
+  eventID INT NOT NULL,
+  message VARCHAR(255) NOT NULL,
+  isRead TINYINT(1) DEFAULT 0,
+  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (userID) REFERENCES Users(userID),
+  FOREIGN KEY (eventID) REFERENCES Events(eventID)
+);
+
 -- 預設管理員帳號（密碼先用明文，之後要換成 bcrypt hash）
 INSERT INTO Users (username, email, password, role)
 VALUES ('admin', 'dbmsgroup0@gmail.com', '@dbmsGroup8!', 'admin');

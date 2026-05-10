@@ -58,8 +58,44 @@
       </div>
       <div class="top-bar-right">
         <button class="icon-btn" onclick="toggleFilter()">⚙️</button>
-        <button class="icon-btn">🔔</button>
+        <div style="position:relative">
+          <button class="icon-btn" onclick="toggleNotifications()">🔔</button>
+          <span id="notifBadge" style="
+            display:none;
+            position:absolute;top:-4px;right:-4px;
+            background:var(--danger);color:white;
+            font-size:10px;font-weight:700;
+            width:18px;height:18px;border-radius:50%;
+            display:flex;align-items:center;justify-content:center">
+            0
+          </span>
+        </div>
         <button class="icon-btn">❓</button>
+      </div>
+    </div>
+
+    <!-- 通知面板 -->
+    <div id="notifPanel" style="
+      display:none;
+      position:fixed;top:70px;right:320px;
+      width:340px;max-height:480px;
+      background:white;border-radius:var(--radius-lg);
+      box-shadow:var(--shadow-lg);border:1px solid var(--border);
+      overflow:hidden;z-index:200">
+
+      <div style="display:flex;justify-content:space-between;align-items:center;
+        padding:16px 20px;border-bottom:1px solid var(--border)">
+        <h3 style="font-size:15px">通知</h3>
+        <button onclick="markAllRead()" style="
+          width:auto;padding:4px 12px;font-size:12px;margin:0;
+          background:var(--bg);color:var(--text-secondary);
+          border:1px solid var(--border);border-radius:20px">
+          全部已讀
+        </button>
+      </div>
+
+      <div id="notifList" style="overflow-y:auto;max-height:400px">
+        <p style="text-align:center;padding:24px;color:var(--text-tertiary)">載入中...</p>
       </div>
     </div>
 

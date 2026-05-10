@@ -403,5 +403,109 @@ async function confirmDeleteFolder() {
   loadFavorites();
 }
 
+let notifOpen = false;
+
+async function loadNotifications() {
+  try {
+    const res = await fetch('/api/notifications', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const notifications = await res.json();
+
+    // 更新未讀數量
+    const unread = notifications.filter(n => !n.isRead).length;
+    const badge = document.getElementById('notifBadge');
+    if (badge) {
+      if (unread > 0) {
+        badge.textContent = unread > 99 ? '99+' : unread;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+
+    // 更新通知列表
+    const list = document.getElementById('notifList');
+    if (!list) return;
+
+    if (notifications.length === 0) {
+      list.innerHTML = `
+        <p style="text-align:center;padding:24px;color:var(--text-tertiary)">
+          沒有通知
+        </p>`;
+      return;
+    }
+
+    list.innerHTML = notifications.map(n => `
+      <div onclick="readNotif(${n.notificationID}, ${n.eventID})"
+        style="padding:14px 20px;border-bottom:1px solid var(--border);
+        cursor:pointer;transition:background 0.15s;
+        background:${n.isRead ? 'white' : '#eff6ff'}">
+        <div style="display:flex;align-items:flex-start;gap:10px">
+          <span style="font-size:20px;flex-shrink:0">🔔</span>
+          <div style="flex:1">
+            <p style="font-size:13px;color:var(--text-primary);
+              line-height:1.5;margin-bottom:4px">
+              ${n.message}
+            </p>
+            <p style="font-size:11px;color:var(--text-tertiary)">
+              ${new Date(n.createdAt).toLocaleString('zh-TW')}
+            </p>
+          </div>
+          ${!n.isRead
+            ? `<span style="width:8px;height:8px;border-radius:50%;
+                background:var(--brand);flex-shrink:0;margin-top:4px"></span>`
+            : ''
+          }
+        </div>
+      </div>
+    `).join('');
+
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+function toggleNotifications() {
+  const panel = document.getElementById('notifPanel');
+  notifOpen = !notifOpen;
+  panel.style.display = notifOpen ? 'block' : 'none';
+  if (notifOpen) loadNotifications();
+}
+
+async function readNotif(notificationID, eventID) {
+  // 標記已讀
+  await fetch(`/api/notifications/${notificationID}/read`, {
+    method: 'PATCH',
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  // 跳到活動頁
+  window.location.href = `event.html?id=${eventID}`;
+}
+
+async function markAllRead() {
+  await fetch('/api/notifications/read-all', {
+    method: 'PATCH',
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  loadNotifications();
+}
+
+// 點外面關閉通知面板
+document.addEventListener('click', (e) => {
+  const panel = document.getElementById('notifPanel');
+  const btn = e.target.closest('.icon-btn');
+  if (panel && !panel.contains(e.target) && !btn) {
+    panel.style.display = 'none';
+    notifOpen = false;
+  }
+});
+
+// 每 60 秒自動更新通知數量
+setInterval(loadNotifications, 60000);
+
+// 初始載入通知
+loadNotifications();
+
 // 初始載入
 loadEvents();
