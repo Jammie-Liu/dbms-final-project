@@ -81,15 +81,61 @@ async function viewDetail(eventID) {
     currentEventID = eventID;
 
     const res = await fetch(`/api/events/${eventID}`, {
-    headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${token}` }
     });
     const event = await res.json();
 
+    // 如果是被檢舉的 tab，也抓檢舉詳情
+    let reportSection = '';
+    if (currentTab === 'reported') {
+        const reportRes = await fetch(`/api/admin/events/reported`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const reportedEvents = await reportRes.json();
+        const reportedEvent = reportedEvents.find(e => e.eventID === eventID);
+
+        if (reportedEvent) {
+        const reasons = reportedEvent.reportReasons
+            ? reportedEvent.reportReasons.split(',').map(r => getReasonLabel(r.trim())).join('、')
+            : '';
+        const details = reportedEvent.reportDetails
+            ? reportedEvent.reportDetails.split('|').map(d => d.trim()).filter(d => d && d !== 'null')
+            : [];
+
+        reportSection = `
+            <hr style="margin:16px 0">
+            <h3 style="margin-bottom:12px;color:var(--danger)">🚨 檢舉資訊</h3>
+            <div style="background:#fef2f2;border-radius:var(--radius-md);padding:16px">
+                <p style="margin-bottom:8px">
+                    <b>檢舉次數：</b>${reportedEvent.reportCount} 次
+                </p>
+                <p style="margin-bottom:8px">
+                    <b>檢舉原因：</b>${reasons}
+                </p>
+                ${details.length > 0 ? `
+                    <div style="margin-top:12px">
+                        <b>檢舉詳情：</b>
+                        <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">
+                            ${details.map((d, i) => `
+                            <div style="background:white;border-radius:var(--radius-sm);
+                                padding:10px 14px;font-size:13px;color:var(--text-secondary);
+                                border:1px solid #fecaca">
+                                ${i + 1}. ${d}
+                            </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : '<p style="margin-top:8px;color:var(--text-tertiary);font-size:13px">無補充說明</p>'}
+            </div>
+        `;
+        }
+    }
+
     const categoryMap = {
-    career: '🎓 職涯與學術成長',
-    arts: '🎨 藝文與生活體驗',
-    social: '🎉 社團與社交娛樂',
-    volunteer: '🤝 志願服務與社會參與'
+        career: '🎓 職涯與學術成長',
+        arts: '🎨 藝文與生活體驗',
+        social: '🎉 社團與社交娛樂',
+        volunteer: '🤝 志願服務與社會參與'
     };
 
     document.getElementById('detailContent').innerHTML = `
@@ -119,10 +165,10 @@ async function viewDetail(eventID) {
     <hr style="margin-bottom:16px">
     <h3 style="margin-bottom:8px">活動說明</h3>
     <p style="line-height:1.7">${event.description}</p>
+    ${reportSection}
     `;
 
     // 已通過或退件的活動，隱藏審核按鈕
-    const detailActions = document.getElementById('detailActions');
     if (currentTab === 'approved' || currentTab === 'rejected') {
         document.getElementById('approveBtn').style.display = 'none';
         document.getElementById('rejectBtn').style.display = 'none';
@@ -132,6 +178,8 @@ async function viewDetail(eventID) {
     }
 
     document.getElementById('detailPopup').style.display = 'flex';
+
+    
 }
 
 function closeDetail() {

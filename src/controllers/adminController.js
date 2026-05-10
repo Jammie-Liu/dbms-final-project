@@ -22,6 +22,7 @@ exports.getReportedEvents = async (req, res) => {
     const [events] = await db.query(
       `SELECT e.*, u.username AS organizerName,
         GROUP_CONCAT(DISTINCT r.reason) AS reportReasons,
+        GROUP_CONCAT(DISTINCT r.detail SEPARATOR ' | ') AS reportDetails,
         COUNT(r.reportID) AS reportCount
        FROM Events e
        JOIN Users u ON e.organizerID = u.userID

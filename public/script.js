@@ -193,9 +193,21 @@ async function toggleFavorite(eventID, el, e) {
 
 let reportTargetEventID = null;
 
+const reasonLabels = {
+  inappropriate: '🔞 色情／不當內容',
+  violence: '⚠️ 暴力',
+  fraud: '💰 詐騙',
+  misinformation: '❌ 不實資訊',
+  other: '💬 其他'
+};
+
 function showReportMenu(eventID) {
   reportTargetEventID = eventID;
+  // 清除上次的選擇
   document.querySelectorAll('input[name="reportReason"]').forEach(r => r.checked = false);
+  document.getElementById('reportDetail').value = '';
+  document.getElementById('reportStep1').style.display = 'block';
+  document.getElementById('reportStep2').style.display = 'none';
   document.getElementById('reportPopup').style.display = 'flex';
 }
 
@@ -204,12 +216,28 @@ function closeReportPopup() {
   reportTargetEventID = null;
 }
 
-async function submitReport() {
+function goToReportStep2() {
   const selected = document.querySelector('input[name="reportReason"]:checked');
   if (!selected) {
     alert('請選擇檢舉原因！');
     return;
   }
+
+  // 顯示選擇的原因標籤
+  document.getElementById('selectedReasonTag').textContent = reasonLabels[selected.value];
+
+  document.getElementById('reportStep1').style.display = 'none';
+  document.getElementById('reportStep2').style.display = 'block';
+}
+
+function backToReportStep1() {
+  document.getElementById('reportStep1').style.display = 'block';
+  document.getElementById('reportStep2').style.display = 'none';
+}
+
+async function submitReport() {
+  const selected = document.querySelector('input[name="reportReason"]:checked');
+  const detail = document.getElementById('reportDetail').value;
 
   try {
     const res = await fetch(`/api/reports/${reportTargetEventID}`, {
@@ -218,7 +246,10 @@ async function submitReport() {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({ reason: selected.value })
+      body: JSON.stringify({
+        reason: selected.value,
+        detail: detail || null
+      })
     });
 
     if (res.ok) {
