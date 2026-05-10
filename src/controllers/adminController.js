@@ -22,6 +22,7 @@ exports.getReportedEvents = async (req, res) => {
     const [events] = await db.query(
       `SELECT e.*, u.username AS organizerName,
         GROUP_CONCAT(DISTINCT r.reason) AS reportReasons,
+        GROUP_CONCAT(DISTINCT r.detail SEPARATOR ' | ') AS reportDetails,
         COUNT(r.reportID) AS reportCount
        FROM Events e
        JOIN Users u ON e.organizerID = u.userID
@@ -72,18 +73,14 @@ exports.getRejectedEvents = async (req, res) => {
 // 審核活動
 exports.auditEvent = async (req, res) => {
   const { eventID } = req.params;
-  const { result } = req.body; // 'approved' | 'rejected'
+  const { result, rejectReason } = req.body;
 
   try {
-    // 更新活動審核狀態
     await db.query(
-      `UPDATE Events SET auditStatus = ?, status = ? WHERE eventID = ?`,
-      [result, result === 'approved' ? 'approved' : 'rejected', eventID]
+      `UPDATE Events SET auditStatus = ?, status = ?, rejectReason = ? WHERE eventID = ?`,
+      [result, result === 'approved' ? 'approved' : 'rejected', rejectReason || null, eventID]
     );
 
-    // 同時把該活動的檢舉都標記為已審核
-    // 通過 → isVerified = 0（不屬實）
-    // 不通過 → isVerified = 1（屬實）
     await db.query(
       `UPDATE Reports SET isVerified = ? WHERE eventID = ?`,
       [result === 'rejected' ? 1 : 0, eventID]

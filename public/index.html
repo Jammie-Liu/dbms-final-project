@@ -23,7 +23,7 @@
       </a>
     </nav>
     <div class="sidebar-bottom">
-      <div class="user-chip">
+      <div class="user-chip" onclick="openProfileModal()" style="cursor:pointer">
         <div class="user-avatar" id="userAvatar"></div>
         <div>
           <p id="welcomeText" style="font-weight:600;font-size:14px"></p>
@@ -58,8 +58,44 @@
       </div>
       <div class="top-bar-right">
         <button class="icon-btn" onclick="toggleFilter()">⚙️</button>
-        <button class="icon-btn">🔔</button>
+        <div style="position:relative">
+          <button class="icon-btn" onclick="toggleNotifications()">🔔</button>
+          <span id="notifBadge" style="
+            display:none;
+            position:absolute;top:-4px;right:-4px;
+            background:var(--danger);color:white;
+            font-size:10px;font-weight:700;
+            width:18px;height:18px;border-radius:50%;
+            display:flex;align-items:center;justify-content:center">
+            0
+          </span>
+        </div>
         <button class="icon-btn">❓</button>
+      </div>
+    </div>
+
+    <!-- 通知面板 -->
+    <div id="notifPanel" style="
+      display:none;
+      position:fixed;top:70px;right:320px;
+      width:340px;max-height:480px;
+      background:white;border-radius:var(--radius-lg);
+      box-shadow:var(--shadow-lg);border:1px solid var(--border);
+      overflow:hidden;z-index:200">
+
+      <div style="display:flex;justify-content:space-between;align-items:center;
+        padding:16px 20px;border-bottom:1px solid var(--border)">
+        <h3 style="font-size:15px">通知</h3>
+        <button onclick="markAllRead()" style="
+          width:auto;padding:4px 12px;font-size:12px;margin:0;
+          background:var(--bg);color:var(--text-secondary);
+          border:1px solid var(--border);border-radius:20px">
+          全部已讀
+        </button>
+      </div>
+
+      <div id="notifList" style="overflow-y:auto;max-height:400px">
+        <p style="text-align:center;padding:24px;color:var(--text-tertiary)">載入中...</p>
       </div>
     </div>
 
@@ -164,10 +200,13 @@
   </aside>
 
   <!-- 檢舉 popup -->
-  <div id="reportPopup" class="popup-overlay"
-    style="display:none;align-items:center;justify-content:center">
-    <div class="popup-box" style="border-radius:var(--radius-xl);max-width:400px;width:90%">
-      <div class="popup-handle"></div>
+<div id="reportPopup" class="popup-overlay"
+  style="display:none;align-items:center;justify-content:center">
+  <div class="popup-box" style="border-radius:var(--radius-xl);max-width:400px;width:90%">
+    <div class="popup-handle"></div>
+
+    <!-- Step 1：選擇原因 -->
+    <div id="reportStep1">
       <h3 style="margin-bottom:6px">檢舉活動</h3>
       <p style="color:var(--text-secondary);font-size:14px;margin-bottom:20px">
         請選擇檢舉原因
@@ -217,9 +256,61 @@
             </div>
           </div>
         </label>
+
+        <label class="report-option">
+          <input type="radio" name="reportReason" value="other">
+          <div class="report-option-content">
+            <span class="report-icon">💬</span>
+            <div>
+              <p style="font-weight:500;font-size:14px">其他</p>
+              <p style="font-size:12px;color:var(--text-tertiary)">其他原因</p>
+            </div>
+          </div>
+        </label>
       </div>
 
       <div style="display:flex;gap:10px;margin-top:20px;
+        padding-top:16px;border-top:1px solid var(--border)">
+        <button onclick="closeReportPopup()" style="
+          flex:1;margin:0;background:var(--bg);
+          color:var(--text-primary);border:1.5px solid var(--border)">
+          取消
+        </button>
+        <button onclick="goToReportStep2()" style="flex:1;margin:0">
+          下一步 →
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 2：填寫詳細原因 -->
+    <div id="reportStep2" style="display:none">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+        <button onclick="backToReportStep1()" style="
+          width:auto;padding:6px 12px;margin:0;font-size:13px;
+          background:var(--bg);color:var(--text-secondary);
+          border:1.5px solid var(--border);border-radius:20px">
+          ← 返回
+        </button>
+        <h3>補充說明</h3>
+      </div>
+
+      <div id="selectedReasonTag" style="
+        display:inline-flex;align-items:center;gap:6px;
+        background:#fef2f2;color:var(--danger);
+        padding:6px 12px;border-radius:20px;
+        font-size:13px;font-weight:500;margin-bottom:16px">
+      </div>
+
+      <div class="form-group">
+        <label style="font-size:14px;font-weight:500;margin-bottom:8px;display:block">
+          詳細說明（選填）
+        </label>
+        <textarea id="reportDetail" rows="4"
+          placeholder="請描述具體情況，幫助我們更快處理你的檢舉..."
+          style="resize:none"></textarea>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:16px;
         padding-top:16px;border-top:1px solid var(--border)">
         <button onclick="closeReportPopup()" style="
           flex:1;margin:0;background:var(--bg);
@@ -232,8 +323,10 @@
         </button>
       </div>
     </div>
-  </div>
 
+  </div>
+</div>
+  <script src="sidebar.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

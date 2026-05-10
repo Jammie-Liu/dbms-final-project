@@ -15,12 +15,13 @@ const userRoutes = require('./src/routes/userRoutes');
 const eventRoutes = require('./src/routes/eventRoutes');
 const adminRoutes = require('./src/routes/adminRoutes');
 const reportRoutes = require('./src/routes/reportRoutes');
+const notificationRoutes = require('./src/routes/notificationRoutes');
 
 app.use('/api/users', userRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/reports', reportRoutes);
-
+app.use('/api/notifications', notificationRoutes);
 
 // 讓首頁明確指向 index.html
 app.get('/', (req, res) => {

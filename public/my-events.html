@@ -48,6 +48,15 @@
             <p>📅 ${new Date(event.eventTime).toLocaleDateString('zh-TW')}</p>
             <p>📍 ${event.location}</p>
             <p>狀態：${getStatusText(event.status)}</p>
+            ${event.auditStatus === 'rejected' && event.rejectReason ? `
+              <div style="margin-top:8px;padding:10px 12px;background:#fef2f2;
+                border-radius:var(--radius-sm);border:1px solid #fecaca">
+                <p style="font-size:12px;font-weight:600;color:var(--danger);margin-bottom:4px">
+                  退件原因
+                </p>
+                <p style="font-size:13px;color:var(--text-secondary)">${event.rejectReason}</p>
+              </div>
+            ` : ''}
           </div>
         </div>
       `).join('');

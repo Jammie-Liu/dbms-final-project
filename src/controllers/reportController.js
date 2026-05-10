@@ -2,14 +2,14 @@ const db = require('../lib/mysql');
 
 exports.reportEvent = async (req, res) => {
   const { eventID } = req.params;
-  const { reason } = req.body;
+  const { reason, detail } = req.body;
   const reporterID = req.user.userID;
 
   try {
     // 新增檢舉
     await db.query(
-      'INSERT INTO Reports (reporterID, eventID, reason) VALUES (?, ?, ?)',
-      [reporterID, eventID, reason]
+      'INSERT INTO Reports (reporterID, eventID, reason, detail) VALUES (?, ?, ?, ?)',
+      [reporterID, eventID, reason, detail || null]
     );
 
     // 檢查是否達到「被檢舉 5 次且屬實 3 次」的條件 → 封鎖 1 年
