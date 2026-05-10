@@ -21,7 +21,7 @@ function renderSidebar() {
 
   const sidebarHTML = `
     <aside class="sidebar">
-      <div class="sidebar-logo">🎯學生活動資訊平台</div>
+      <div class="sidebar-logo">🎯 學生活動資訊平台</div>
 
       <nav class="sidebar-nav">
         <p class="nav-label">MAIN MENU</p>

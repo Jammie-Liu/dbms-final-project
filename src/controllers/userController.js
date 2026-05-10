@@ -40,7 +40,7 @@ exports.login = async (req, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM Users WHERE email = ?', [email]);
     if (rows.length === 0) {
-      return res.status(401).json({ message: 'Email 或密碼錯誤' });
+      return res.status(401).json({ message: '請輸入 Email 或密碼！' });
     }
     const user = rows[0];
     const match = await bcrypt.compare(password, user.password);
@@ -112,7 +112,7 @@ exports.forgotPassword = async (req, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM Users WHERE email = ?', [email]);
     if (rows.length === 0) {
-      return res.json({ message: '若此 Email 存在，重設連結已寄出' });
+      return res.json({ message: '請輸入正確的 Email！' });
     }
     const user = rows[0];
     const token = crypto.randomBytes(32).toString('hex');
@@ -132,7 +132,7 @@ exports.forgotPassword = async (req, res) => {
       html: `<p>點此連結重設密碼（30分鐘內有效）：</p>
              <a href="http://localhost:3000/reset-password.html?token=${token}">重設密碼</a>`,
     });
-    res.json({ message: '若此 Email 存在，重設連結已寄出' });
+    res.json({ message: '密碼重設連結已寄出！' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: '伺服器錯誤' });

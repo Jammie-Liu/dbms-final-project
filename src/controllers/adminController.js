@@ -37,6 +37,38 @@ exports.getReportedEvents = async (req, res) => {
   }
 };
 
+// 取得已通過的活動
+exports.getApprovedEvents = async (req, res) => {
+  try {
+    const [events] = await db.query(
+      `SELECT e.*, u.username AS organizerName
+       FROM Events e JOIN Users u ON e.organizerID = u.userID
+       WHERE e.auditStatus = 'approved'
+       ORDER BY e.publishedAt DESC`
+    );
+    res.json(events);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: '伺服器錯誤' });
+  }
+};
+
+// 取得退件的活動
+exports.getRejectedEvents = async (req, res) => {
+  try {
+    const [events] = await db.query(
+      `SELECT e.*, u.username AS organizerName
+       FROM Events e JOIN Users u ON e.organizerID = u.userID
+       WHERE e.auditStatus = 'rejected'
+       ORDER BY e.publishedAt DESC`
+    );
+    res.json(events);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: '伺服器錯誤' });
+  }
+};
+
 // 審核活動
 exports.auditEvent = async (req, res) => {
   const { eventID } = req.params;
