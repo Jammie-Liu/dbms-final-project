@@ -53,7 +53,7 @@ body {
    TYPOGRAPHY
 =========================== */
 h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.5px; }
-h2 { font-size: 22px; font-weight: 600; letter-spacing: -0.3px; }
+h2 { font-size: 22px; font-weight: 600; letter-spacing: -0.3px; margin-left: 5%;}
 h3 { font-size: 16px; font-weight: 500; }
 p  { font-size: 14px; line-height: 1.6; color: var(--text-secondary); }
 
@@ -621,7 +621,8 @@ button {
   max-width: 640px;
   margin-top: 40px;       /* 移除 auto，手動設定上下間距 */
   margin-bottom: 40px;
-  margin-left: 160px;
+  margin-left: 10%;
+  margin-right: 10%;
   background: var(--white);
   padding: 36px;
   border-radius: var(--radius-xl);
@@ -1046,7 +1047,7 @@ body {
   margin-left: 220px;
   margin-right: 300px;
   min-height: 100vh;
-  padding: 0 32px 40px;
+  
   flex: 1;
 }
 
@@ -1055,7 +1056,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 0;
+  padding: 20px 5%;
   border-bottom: 1px solid var(--border);
   margin-bottom: 28px;
   position: sticky;
@@ -1124,6 +1125,7 @@ body {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
+  padding-left: 5%;
   margin-bottom: 20px;
   gap: 16px;
   flex-wrap: wrap;
@@ -1168,6 +1170,7 @@ body {
 /* 排序列 */
 .sort-bar {
   display: flex;
+  padding-left: 5%;
   gap: 8px;
   margin-bottom: 24px;
 }
@@ -1201,6 +1204,7 @@ body {
 .event-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
+  padding: 0% 5%;
   gap: 20px;
 }
 
@@ -1235,6 +1239,7 @@ body {
   margin-bottom: 14px;
   color: var(--text-primary);
 }
+
 
 /* 熱門標籤 */
 .trending-item {
@@ -1305,8 +1310,14 @@ body {
   color: white;
 }
 
-.new-activity-card h3 { color: white; }
-.new-activity-card p  { color: rgba(255,255,255,0.8); font-size: 13px; }
+.new-activity-card h3 {
+  color: white;
+}
+
+.new-activity-card p {
+  color: rgba(255,255,255,0.8);
+  font-size: 13px;
+}
 
 .create-btn {
   margin-top: 14px;
@@ -1428,5 +1439,5 @@ body {
 @media (max-width: 768px) {
   .sidebar { display: none; }
   .main-area { margin-left: 0; padding: 0 16px 40px; }
-  .event-grid { grid-template-columns: 1fr; }
+  .event-grid { grid-template-columns: 1fr; margin: 15%;}
 }

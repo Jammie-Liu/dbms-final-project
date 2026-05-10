@@ -53,11 +53,11 @@ exports.getEvents = async (req, res) => {
     const params = [];
 
     if (category) {
-  const categories = category.split(',');
-  const placeholders = categories.map(() => '?').join(',');
-  whereSQL += ` AND e.category IN (${placeholders})`;
-  params.push(...categories);
-  }
+      const categories = category.split(',');
+      const placeholders = categories.map(() => '?').join(',');
+      whereSQL += ` AND e.category IN (${placeholders})`;
+      params.push(...categories);
+    }
 
 
     const [events] = await db.query(`
