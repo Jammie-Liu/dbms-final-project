@@ -50,6 +50,40 @@
     </div>
   </div>
 
+  <!-- 退件理由 popup -->
+  <div id="rejectPopup" class="popup-overlay"
+    style="display:none;align-items:center;justify-content:center">
+    <div class="popup-box" style="border-radius:var(--radius-xl);max-width:440px;width:90%">
+      <div class="popup-handle"></div>
+      <h3 style="margin-bottom:8px">退件原因</h3>
+      <p style="color:var(--text-secondary);font-size:14px;margin-bottom:20px">
+        請填寫退件原因，將通知主辦人修改後重新送審
+      </p>
+
+      <div class="form-group">
+        <label style="font-size:14px;font-weight:500;margin-bottom:8px;display:block">
+          退件原因 *
+        </label>
+        <textarea id="rejectReason" rows="4"
+          placeholder="請說明活動不通過的原因..."
+          style="resize:none"></textarea>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:16px;
+        padding-top:16px;border-top:1px solid var(--border)">
+        <button onclick="closeRejectPopup()" style="
+          flex:1;margin:0;background:var(--bg);
+          color:var(--text-primary);border:1.5px solid var(--border)">
+          取消
+        </button>
+        <button onclick="confirmReject()" style="
+          flex:1;margin:0;background:var(--danger);color:white">
+          確認退件
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script src="../js/admin.js"></script>
 </body>
 

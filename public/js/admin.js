@@ -52,12 +52,21 @@ async function loadEvents() {
                 被檢舉 ${event.reportCount} 次
             </p>`
         : ''
-    }
+        }
+        ${currentTab === 'rejected' && event.rejectReason ? `
+            <div style="margin-top:10px;padding:10px 12px;background:#fef2f2;
+            border-radius:var(--radius-sm);border:1px solid #fecaca">
+            <p style="font-size:12px;font-weight:600;color:var(--danger);margin-bottom:4px">
+                退件原因
+            </p>
+            <p style="font-size:13px;color:var(--text-secondary)">${event.rejectReason}</p>
+            </div>
+        ` : ''}
         <div style="margin-top:12px">
             <button onclick="viewDetail(${event.eventID})"
-            style="width:auto;padding:8px 16px;background:var(--bg);
-            color:var(--text-primary);border:1.5px solid var(--border);font-size:13px">
-            👁️ View Detail
+                style="width:auto;padding:8px 16px;background:var(--bg);
+                color:var(--text-primary);border:1.5px solid var(--border);font-size:13px">
+                👁️ View Detail
             </button>
         </div>
         </div>
@@ -187,22 +196,45 @@ function closeDetail() {
     currentEventID = null;
 }
 
-async function auditFromDetail(result) {
-    if (!currentEventID) return;
-    await audit(currentEventID, result);
+function auditFromDetail(result) {
+  if (!currentEventID) return;
+  if (result === 'rejected') {
+    // 開退件理由 popup
+    document.getElementById('rejectReason').value = '';
+    document.getElementById('rejectPopup').style.display = 'flex';
+  } else {
+    // 直接通過
+    audit(currentEventID, 'approved', null);
     closeDetail();
+  }
 }
 
-async function audit(eventID, result) {
-    await fetch(`/api/admin/events/${eventID}/audit`, {
+function closeRejectPopup() {
+  document.getElementById('rejectPopup').style.display = 'none';
+}
+
+async function confirmReject() {
+  const reason = document.getElementById('rejectReason').value.trim();
+  if (!reason) {
+    alert('請填寫退件原因！');
+    return;
+  }
+
+  await audit(currentEventID, 'rejected', reason);
+  closeRejectPopup();
+  closeDetail();
+}
+
+async function audit(eventID, result, rejectReason) {
+  await fetch(`/api/admin/events/${eventID}/audit`, {
     method: 'PATCH',
     headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
     },
-    body: JSON.stringify({ result })
-    });
-    loadEvents();
+    body: JSON.stringify({ result, rejectReason })
+  });
+  loadEvents();
 }
 
 function setTab(tab, btn) {

@@ -321,3 +321,48 @@ exports.deleteFolder = async (req, res) => {
     res.status(500).json({ message: '伺服器錯誤' });
   }
 };
+
+exports.updateProfile = async (req, res) => {
+  const userID = req.user.userID;
+  const { username, currentPassword, newPassword } = req.body;
+
+  try {
+    const [rows] = await db.query(
+      'SELECT * FROM Users WHERE userID = ?', [userID]
+    );
+    const user = rows[0];
+
+    // 如果要改密碼
+    if (newPassword) {
+      if (!currentPassword) {
+        return res.status(400).json({ message: '請輸入目前密碼' });
+      }
+
+      const match = await bcrypt.compare(currentPassword, user.password);
+      if (!match) {
+        return res.status(400).json({ message: '目前密碼錯誤' });
+      }
+
+      if (!isValidPassword(newPassword)) {
+        return res.status(400).json({ message: '新密碼需 8~12 字元，且含至少 1 數字與 1 英文' });
+      }
+
+      const hashedPw = await bcrypt.hash(newPassword, 10);
+      await db.query(
+        'UPDATE Users SET username = ?, password = ? WHERE userID = ?',
+        [username || user.username, hashedPw, userID]
+      );
+    } else {
+      // 只改名稱
+      await db.query(
+        'UPDATE Users SET username = ? WHERE userID = ?',
+        [username || user.username, userID]
+      );
+    }
+
+    res.json({ message: '個資更新成功' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: '伺服器錯誤' });
+  }
+};
