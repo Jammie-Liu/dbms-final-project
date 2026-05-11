@@ -52,7 +52,8 @@
 
   <!-- 退件理由 popup -->
   <div id="rejectPopup" class="popup-overlay"
-    style="display:none;align-items:center;justify-content:center">
+    style="display:none;align-items:center;justify-content:center"
+    onclick="if(event.target===this) closeRejectPopup()">
     <div class="popup-box" style="border-radius:var(--radius-xl);max-width:440px;width:90%">
       <div class="popup-handle"></div>
       <h3 style="margin-bottom:8px">退件原因</h3>

@@ -622,7 +622,7 @@ button {
   max-width: 640px;
   margin-top: 40px;       /* 移除 auto，手動設定上下間距 */
   margin-bottom: 40px;
-  margin-left: 10%;
+  margin-left: 20%;
   margin-right: 10%;
   background: var(--white);
   padding: 36px;

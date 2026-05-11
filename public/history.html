@@ -5,20 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>瀏覽紀錄</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    .main-area {
+      margin-right: 0 !important;
+    }
+    .event-grid {
+      grid-template-columns: repeat(3, 1fr) !important;
+    }
+  </style>
 </head>
 <body>
   <div class="main-area">
   <div class="top-bar">
     <h2>🕐 History</h2>
   </div>
-  <div id="historyList" class="event-grid"></div>
-</div>
-
-  <div class="main-content" style="margin-top:70px">
     <div id="historyList" class="event-grid"></div>
   </div>
-
- 
 
   <script src="sidebar.js"></script>
 

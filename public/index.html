@@ -99,48 +99,6 @@
       </div>
     </div>
 
-    <!-- 進階篩選面板 -->
-    <div id="filterPanel" style="display:none;background:white;border:1px solid var(--border);
-      border-radius:var(--radius-md);padding:24px;margin:0 5% 20px;
-      box-shadow:var(--shadow-md)">
-      <h3 style="margin-bottom:20px;font-size:15px;color:var(--text-secondary);
-        font-weight:600;letter-spacing:0.5px">進階篩選</h3>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr) auto;gap:16px;align-items:end">
-        <div class="form-group" style="margin:0">
-          <label style="font-size:13px;margin-bottom:6px">📅 日期</label>
-          <input type="date" id="filterDate">
-        </div>
-        <div class="form-group" style="margin:0">
-          <label style="font-size:13px;margin-bottom:6px">📍 地點</label>
-          <input type="text" id="filterLocation" placeholder="輸入地點">
-        </div>
-        <div class="form-group" style="margin:0">
-          <label style="font-size:13px;margin-bottom:6px">💰 費用上限（NT$）</label>
-          <input type="number" id="filterFee" placeholder="不限" min="0">
-        </div>
-        <div style="display:flex;flex-direction:column;gap:10px;padding-bottom:2px">
-          <label style="display:flex;align-items:center;gap:8px;font-size:13px;
-            cursor:pointer;white-space:nowrap">
-            <input type="checkbox" id="filterMeal"
-              style="width:16px;height:16px;accent-color:var(--brand)">
-            🍱 附餐食
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:13px;
-            cursor:pointer;white-space:nowrap">
-            <input type="checkbox" id="filterGift"
-              style="width:16px;height:16px;accent-color:var(--brand)">
-            🎁 附贈品
-          </label>
-        </div>
-      </div>
-      <div style="display:flex;gap:10px;margin-top:20px;padding-top:16px;
-        border-top:1px solid var(--border)">
-        <button onclick="applyFilter()" style="width:auto;padding:9px 24px">套用篩選</button>
-        <button onclick="clearFilter()" style="width:auto;padding:9px 24px;background:var(--bg);
-          color:var(--text-primary);border:1.5px solid var(--border)">清除</button>
-      </div>
-    </div>
-
     <!-- 標題 -->
     <div class="stream-header">
       <div>
@@ -200,132 +158,187 @@
   </aside>
 
   <!-- 檢舉 popup -->
-<div id="reportPopup" class="popup-overlay"
-  style="display:none;align-items:center;justify-content:center">
-  <div class="popup-box" style="border-radius:var(--radius-xl);max-width:400px;width:90%">
-    <div class="popup-handle"></div>
+  <div id="reportPopup" class="popup-overlay"
+    style="display:none;align-items:center;justify-content:center"
+    onclick="if(event.target===this) closeReportPopup()">
+    <div class="popup-box" style="border-radius:var(--radius-xl);max-width:400px;width:90%">
+      <div class="popup-handle"></div>
 
-    <!-- Step 1：選擇原因 -->
-    <div id="reportStep1">
-      <h3 style="margin-bottom:6px">檢舉活動</h3>
-      <p style="color:var(--text-secondary);font-size:14px;margin-bottom:20px">
-        請選擇檢舉原因
-      </p>
+      <!-- Step 1：選擇原因 -->
+      <div id="reportStep1">
+        <h3 style="margin-bottom:6px">檢舉活動</h3>
+        <p style="color:var(--text-secondary);font-size:14px;margin-bottom:20px">
+          請選擇檢舉原因
+        </p>
 
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <label class="report-option">
-          <input type="radio" name="reportReason" value="inappropriate">
-          <div class="report-option-content">
-            <span class="report-icon">🔞</span>
-            <div>
-              <p style="font-weight:500;font-size:14px">色情／不當內容</p>
-              <p style="font-size:12px;color:var(--text-tertiary)">包含不適當或露骨的內容</p>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <label class="report-option">
+            <input type="radio" name="reportReason" value="inappropriate">
+            <div class="report-option-content">
+              <span class="report-icon">🔞</span>
+              <div>
+                <p style="font-weight:500;font-size:14px">色情／不當內容</p>
+                <p style="font-size:12px;color:var(--text-tertiary)">包含不適當或露骨的內容</p>
+              </div>
             </div>
-          </div>
-        </label>
+          </label>
 
-        <label class="report-option">
-          <input type="radio" name="reportReason" value="violence">
-          <div class="report-option-content">
-            <span class="report-icon">⚠️</span>
-            <div>
-              <p style="font-weight:500;font-size:14px">暴力</p>
-              <p style="font-size:12px;color:var(--text-tertiary)">包含暴力或危險內容</p>
+          <label class="report-option">
+            <input type="radio" name="reportReason" value="violence">
+            <div class="report-option-content">
+              <span class="report-icon">⚠️</span>
+              <div>
+                <p style="font-weight:500;font-size:14px">暴力</p>
+                <p style="font-size:12px;color:var(--text-tertiary)">包含暴力或危險內容</p>
+              </div>
             </div>
-          </div>
-        </label>
+          </label>
 
-        <label class="report-option">
-          <input type="radio" name="reportReason" value="fraud">
-          <div class="report-option-content">
-            <span class="report-icon">💰</span>
-            <div>
-              <p style="font-weight:500;font-size:14px">詐騙</p>
-              <p style="font-size:12px;color:var(--text-tertiary)">疑似詐騙或惡意活動</p>
+          <label class="report-option">
+            <input type="radio" name="reportReason" value="fraud">
+            <div class="report-option-content">
+              <span class="report-icon">💰</span>
+              <div>
+                <p style="font-weight:500;font-size:14px">詐騙</p>
+                <p style="font-size:12px;color:var(--text-tertiary)">疑似詐騙或惡意活動</p>
+              </div>
             </div>
-          </div>
-        </label>
+          </label>
 
-        <label class="report-option">
-          <input type="radio" name="reportReason" value="misinformation">
-          <div class="report-option-content">
-            <span class="report-icon">❌</span>
-            <div>
-              <p style="font-weight:500;font-size:14px">不實資訊</p>
-              <p style="font-size:12px;color:var(--text-tertiary)">內容與實際情況不符</p>
+          <label class="report-option">
+            <input type="radio" name="reportReason" value="misinformation">
+            <div class="report-option-content">
+              <span class="report-icon">❌</span>
+              <div>
+                <p style="font-weight:500;font-size:14px">不實資訊</p>
+                <p style="font-size:12px;color:var(--text-tertiary)">內容與實際情況不符</p>
+              </div>
             </div>
-          </div>
-        </label>
+          </label>
 
-        <label class="report-option">
-          <input type="radio" name="reportReason" value="other">
-          <div class="report-option-content">
-            <span class="report-icon">💬</span>
-            <div>
-              <p style="font-weight:500;font-size:14px">其他</p>
-              <p style="font-size:12px;color:var(--text-tertiary)">其他原因</p>
+          <label class="report-option">
+            <input type="radio" name="reportReason" value="other">
+            <div class="report-option-content">
+              <span class="report-icon">💬</span>
+              <div>
+                <p style="font-weight:500;font-size:14px">其他</p>
+                <p style="font-size:12px;color:var(--text-tertiary)">其他原因</p>
+              </div>
             </div>
-          </div>
-        </label>
+          </label>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:20px;
+          padding-top:16px;border-top:1px solid var(--border)">
+          <button onclick="closeReportPopup()" style="
+            flex:1;margin:0;background:var(--bg);
+            color:var(--text-primary);border:1.5px solid var(--border)">
+            取消
+          </button>
+          <button onclick="goToReportStep2()" style="flex:1;margin:0">
+            下一步 →
+          </button>
+        </div>
       </div>
 
-      <div style="display:flex;gap:10px;margin-top:20px;
-        padding-top:16px;border-top:1px solid var(--border)">
-        <button onclick="closeReportPopup()" style="
-          flex:1;margin:0;background:var(--bg);
-          color:var(--text-primary);border:1.5px solid var(--border)">
-          取消
-        </button>
-        <button onclick="goToReportStep2()" style="flex:1;margin:0">
-          下一步 →
-        </button>
+      <!-- Step 2：填寫詳細原因 -->
+      <div id="reportStep2" style="display:none">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+          <button onclick="backToReportStep1()" style="
+            width:auto;padding:6px 12px;margin:0;font-size:13px;
+            background:var(--bg);color:var(--text-secondary);
+            border:1.5px solid var(--border);border-radius:20px">
+            ← 返回
+          </button>
+          <h3>補充說明</h3>
+        </div>
+
+        <div id="selectedReasonTag" style="
+          display:inline-flex;align-items:center;gap:6px;
+          background:#fef2f2;color:var(--danger);
+          padding:6px 12px;border-radius:20px;
+          font-size:13px;font-weight:500;margin-bottom:16px">
+        </div>
+
+        <div class="form-group">
+          <label style="font-size:14px;font-weight:500;margin-bottom:8px;display:block">
+            詳細說明（選填）
+          </label>
+          <textarea id="reportDetail" rows="4"
+            placeholder="請描述具體情況，幫助我們更快處理你的檢舉..."
+            style="resize:none"></textarea>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:16px;
+          padding-top:16px;border-top:1px solid var(--border)">
+          <button onclick="closeReportPopup()" style="
+            flex:1;margin:0;background:var(--bg);
+            color:var(--text-primary);border:1.5px solid var(--border)">
+            取消
+          </button>
+          <button onclick="submitReport()" style="
+            flex:1;margin:0;background:var(--danger);color:white">
+            送出檢舉
+          </button>
+        </div>
       </div>
     </div>
-
-    <!-- Step 2：填寫詳細原因 -->
-    <div id="reportStep2" style="display:none">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
-        <button onclick="backToReportStep1()" style="
-          width:auto;padding:6px 12px;margin:0;font-size:13px;
-          background:var(--bg);color:var(--text-secondary);
-          border:1.5px solid var(--border);border-radius:20px">
-          ← 返回
-        </button>
-        <h3>補充說明</h3>
-      </div>
-
-      <div id="selectedReasonTag" style="
-        display:inline-flex;align-items:center;gap:6px;
-        background:#fef2f2;color:var(--danger);
-        padding:6px 12px;border-radius:20px;
-        font-size:13px;font-weight:500;margin-bottom:16px">
-      </div>
-
-      <div class="form-group">
-        <label style="font-size:14px;font-weight:500;margin-bottom:8px;display:block">
-          詳細說明（選填）
-        </label>
-        <textarea id="reportDetail" rows="4"
-          placeholder="請描述具體情況，幫助我們更快處理你的檢舉..."
-          style="resize:none"></textarea>
-      </div>
-
-      <div style="display:flex;gap:10px;margin-top:16px;
-        padding-top:16px;border-top:1px solid var(--border)">
-        <button onclick="closeReportPopup()" style="
-          flex:1;margin:0;background:var(--bg);
-          color:var(--text-primary);border:1.5px solid var(--border)">
-          取消
-        </button>
-        <button onclick="submitReport()" style="
-          flex:1;margin:0;background:var(--danger);color:white">
-          送出檢舉
-        </button>
-      </div>
-    </div>
-
   </div>
-</div>
+
+  <!-- 進階篩選 popup -->
+  <div id="filterPanel" class="popup-overlay"
+    style="display:none;align-items:center;justify-content:center"
+    onclick="if(event.target===this) toggleFilter()">
+    <div class="popup-box" style="border-radius:var(--radius-xl);max-width:560px;width:90%">
+      <div class="popup-handle"></div>
+      <h3 style="margin-bottom:20px;font-size:15px;color:var(--text-secondary);
+        font-weight:600;letter-spacing:0.5px">進階篩選</h3>
+
+      <div style="display:grid;grid-template-columns:repeat(3,1fr) auto;gap:16px;align-items:end">
+        <div class="form-group" style="margin:0">
+          <label style="font-size:13px;margin-bottom:6px">📅 日期</label>
+          <input type="date" id="filterDate">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label style="font-size:13px;margin-bottom:6px">📍 地點</label>
+          <input type="text" id="filterLocation" placeholder="輸入地點">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label style="font-size:13px;margin-bottom:6px">💰 費用上限（NT$）</label>
+          <input type="number" id="filterFee" placeholder="不限" min="0">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;padding-bottom:2px">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;
+            cursor:pointer;white-space:nowrap">
+            <input type="checkbox" id="filterMeal"
+              style="width:16px;height:16px;accent-color:var(--brand)">
+            🍱 附餐食
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;
+            cursor:pointer;white-space:nowrap">
+            <input type="checkbox" id="filterGift"
+              style="width:16px;height:16px;accent-color:var(--brand)">
+            🎁 附贈品
+          </label>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:20px;padding-top:16px;
+        border-top:1px solid var(--border)">
+        <button onclick="applyFilter()" style="width:auto;padding:9px 24px">套用篩選</button>
+        <button onclick="clearFilter()" style="width:auto;padding:9px 24px;
+          background:var(--bg);color:var(--text-primary);border:1.5px solid var(--border)">
+          清除
+        </button>
+        <button onclick="toggleFilter()" style="width:auto;padding:9px 24px;
+          background:var(--bg);color:var(--text-secondary);border:1.5px solid var(--border);
+          margin-left:auto">
+          關閉
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script src="sidebar.js"></script>
   <script src="script.js"></script>
 </body>

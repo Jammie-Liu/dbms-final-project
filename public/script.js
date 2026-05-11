@@ -349,7 +349,7 @@ document.getElementById('searchInput').addEventListener('keypress', function (e)
 // 切換篩選面板
 function toggleFilter() {
   const panel = document.getElementById('filterPanel');
-  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
 }
 
 // 套用篩選
@@ -528,11 +528,20 @@ async function markAllRead() {
 
 // 點外面關閉通知面板
 document.addEventListener('click', (e) => {
-  const panel = document.getElementById('notifPanel');
-  const btn = e.target.closest('.icon-btn');
-  if (panel && !panel.contains(e.target) && !btn) {
-    panel.style.display = 'none';
+  // 關閉通知面板
+  const notifPanel = document.getElementById('notifPanel');
+  const filterPanel = document.getElementById('filterPanel');
+
+  if (notifPanel && !notifPanel.contains(e.target) && !e.target.closest('.icon-btn')) {
+    notifPanel.style.display = 'none';
     notifOpen = false;
+  }
+
+  // 關閉篩選面板（點外面且不是 ⚙️ 按鈕）
+  if (filterPanel && filterPanel.style.display !== 'none') {
+    if (!filterPanel.contains(e.target) && !e.target.closest('[onclick="toggleFilter()"]')) {
+      filterPanel.style.display = 'none';
+    }
   }
 });
 
