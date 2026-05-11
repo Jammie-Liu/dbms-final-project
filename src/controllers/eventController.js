@@ -125,7 +125,7 @@ exports.searchEvents = async (req, res) => {
 // 【新增活動】
 exports.createEvent = async (req, res) => {
   const {
-    title, category, description, eventTime, location,
+    title, category, description, eventTime, eventEndTime, location,
     registrationDeadline, registrationLink, hashtag, imageURL,
     hasMeal, hasGift, fee
   } = req.body;
@@ -145,11 +145,11 @@ exports.createEvent = async (req, res) => {
 
     await db.query(
       `INSERT INTO Events
-        (organizerID, title, category, description, eventTime, location,
+        (organizerID, title, category, description, eventTime, eventEndTime, location,
          registrationDeadline, registrationLink, hashtag, imageURL,
          hasMeal, hasGift, fee, deleteAt)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [organizerID, title, category, description, eventTime, location,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [organizerID, title, category, description, eventTime, eventEndTime || null, location,
        registrationDeadline || null, registrationLink || null,
        hashtag || null, imageURL || null,
        hasMeal ? 1 : 0, hasGift ? 1 : 0, fee || 0, deleteAt]
@@ -300,7 +300,7 @@ exports.updateEvent = async (req, res) => {
   const { eventID } = req.params;
   const userID = req.user.userID;
   const {
-    title, category, description, eventTime, location,
+    title, category, description, eventTime, eventEndTime, location,
     registrationDeadline, registrationLink, hashtag,
     imageURL, hasMeal, hasGift, fee
   } = req.body;
@@ -321,14 +321,14 @@ exports.updateEvent = async (req, res) => {
     await db.query(
       `UPDATE Events SET
         title = ?, category = ?, description = ?,
-        eventTime = ?, location = ?,
+        eventTime = ?, eventEndTime = ?, location = ?,
         registrationDeadline = ?, registrationLink = ?,
         hashtag = ?, imageURL = ?,
         hasMeal = ?, hasGift = ?, fee = ?,
         auditStatus = 'unapproved'
        WHERE eventID = ?`,
       [
-        title, category, description, eventTime, location,
+        title, category, description, eventTime, eventEndTime || null, location,
         registrationDeadline || null, registrationLink || null,
         hashtag || null, imageURL || null,
         hasMeal ? 1 : 0, hasGift ? 1 : 0, fee || 0,

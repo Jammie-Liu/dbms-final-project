@@ -31,8 +31,13 @@
       </div>
 
       <div class="form-group">
-        <label>Event Time *</label>
+        <label>Event Start Time *</label>
         <input type="datetime-local" id="eventTime">
+      </div>
+
+      <div class="form-group">
+        <label>Event End Time（選填）</label>
+        <input type="datetime-local" id="eventEndTime">
       </div>
 
       <div class="form-group">
@@ -158,6 +163,9 @@
         if (event.eventTime) {
           document.getElementById('eventTime').value = toLocalDatetimeString(event.eventTime);
         }
+        if (event.eventEndTime) {
+          document.getElementById('eventEndTime').value = toLocalDatetimeString(event.eventEndTime);
+        }
         if (event.registrationDeadline) {
           document.getElementById('registrationDeadline').value = toLocalDatetimeString(event.registrationDeadline);
         }
@@ -245,6 +253,7 @@
         category,
         title,
         eventTime,
+        eventEndTime: document.getElementById('eventEndTime').value || null,
         location,
         description,
         registrationDeadline: document.getElementById('registrationDeadline').value || null,

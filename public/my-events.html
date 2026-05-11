@@ -45,7 +45,10 @@
           </div>
           <div class="card-body">
             <h3>${event.title}</h3>
-            <p>📅 ${new Date(event.eventTime).toLocaleDateString('zh-TW')}</p>
+            <p>📅 ${new Date(event.eventTime).toLocaleDateString('zh-TW')}${event.eventEndTime
+              ? ` - ${new Date(event.eventEndTime).toLocaleDateString('zh-TW')}`
+              : ''
+            }</p>
             <p>📍 ${event.location}</p>
             <p>狀態：${getStatusText(event.status)}</p>
             ${event.auditStatus === 'rejected' && event.rejectReason ? `
