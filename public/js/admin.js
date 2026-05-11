@@ -45,7 +45,10 @@ async function loadEvents() {
         <div class="card-body">
         <h3>${event.title}</h3>
         <p>👤 ${event.organizerName}</p>
-        <p>📅 ${new Date(event.eventTime).toLocaleDateString('zh-TW')}</p>
+        <p>📅 ${new Date(event.eventTime).toLocaleDateString('zh-TW')}${event.eventEndTime
+            ? ` - ${new Date(event.eventEndTime).toLocaleDateString('zh-TW')}`
+            : ''
+        }</p>
         <p>📍 ${event.location}</p>
         ${currentTab === 'reported'
         ? `<p style="color:var(--danger);font-size:13px;margin-top:4px">

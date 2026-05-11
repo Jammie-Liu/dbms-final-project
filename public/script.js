@@ -74,6 +74,7 @@ function renderEventCard(event, index) {
   const statusLabel = getStatusLabel(event);
   const categoryLabel = getCategoryLabel(event.category);
   const eventTime = new Date(event.eventTime).toLocaleDateString('zh-TW');
+  const eventEndTime = event.eventEndTime ? `- ${new Date(event.eventEndTime).toLocaleDateString('zh-TW')}` : '';
   const stars = event.avgStars ? `⭐ ${parseFloat(event.avgStars).toFixed(1)}` : '';
 
   // 判斷是否已收藏
@@ -106,7 +107,7 @@ function renderEventCard(event, index) {
         <span class="category-tag">${categoryLabel.emoji} ${categoryLabel.text}</span>
         <h3>${event.title}</h3>
         <div class="card-meta">
-          <p>📅 ${eventTime}</p>
+          <p>📅 ${eventTime} ${eventEndTime}</p>
           <p>📍 ${event.location}</p>
           <p>💰 ${event.fee > 0 ? event.fee + ' 元' : '免費'}</p>
         </div>
@@ -124,8 +125,11 @@ function getStatusLabel(event) {
   if (event.status === 'cancelled') return { text: '已取消', class: 'cancelled' };
   const now = new Date();
   const eventTime = new Date(event.eventTime);
+  const eventEndTime = event.eventEndTime ? new Date(event.eventEndTime) : null;
   const deadline = event.registrationDeadline ? new Date(event.registrationDeadline) : null;
 
+  // 有結束時間就用結束時間判斷，沒有就用開始時間
+  const endTime = eventEndTime || eventTime;
   if (eventTime < now) return { text: '已結束', class: 'ended' };
   if (deadline && deadline < now) return { text: '報名截止', class: 'closed' };
   if (eventTime - now < 1000 * 60 * 60 * 24 * 3) return { text: '即將開始', class: 'soon' };
@@ -345,7 +349,7 @@ document.getElementById('searchInput').addEventListener('keypress', function (e)
 // 切換篩選面板
 function toggleFilter() {
   const panel = document.getElementById('filterPanel');
-  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
 }
 
 // 套用篩選
@@ -524,11 +528,20 @@ async function markAllRead() {
 
 // 點外面關閉通知面板
 document.addEventListener('click', (e) => {
-  const panel = document.getElementById('notifPanel');
-  const btn = e.target.closest('.icon-btn');
-  if (panel && !panel.contains(e.target) && !btn) {
-    panel.style.display = 'none';
+  // 關閉通知面板
+  const notifPanel = document.getElementById('notifPanel');
+  const filterPanel = document.getElementById('filterPanel');
+
+  if (notifPanel && !notifPanel.contains(e.target) && !e.target.closest('.icon-btn')) {
+    notifPanel.style.display = 'none';
     notifOpen = false;
+  }
+
+  // 關閉篩選面板（點外面且不是 ⚙️ 按鈕）
+  if (filterPanel && filterPanel.style.display !== 'none') {
+    if (!filterPanel.contains(e.target) && !e.target.closest('[onclick="toggleFilter()"]')) {
+      filterPanel.style.display = 'none';
+    }
   }
 });
 

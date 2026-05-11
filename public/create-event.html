@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>新增活動</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    .main-area {
+      margin-right: 0 !important;
+    }
+  </style>
 </head>
 <body>
   <div class="main-area">
@@ -15,7 +20,7 @@
     <div class="form-container">
 
       <div class="form-group">
-        <label>Event Category *</label>
+        <label>Event Category <span style="color:var(--danger)">*</span></label>
         <select id="category">
           <option value="">Please select</option>
           <option value="career">🎓 Career & Academic Development</option>
@@ -26,22 +31,27 @@
       </div>
 
       <div class="form-group">
-        <label>Event Title *</label>
+        <label>Event Title <span style="color:var(--danger)">*</span></label>
         <input type="text" id="title" placeholder="Enter event title">
       </div>
 
       <div class="form-group">
-        <label>Event Time *</label>
+        <label>Event Start Time <span style="color:var(--danger)">*</span></label>
         <input type="datetime-local" id="eventTime">
       </div>
 
       <div class="form-group">
-        <label>Event Location *</label>
+        <label>Event End Time（選填）</label>
+        <input type="datetime-local" id="eventEndTime">
+      </div>
+
+      <div class="form-group">
+        <label>Event Location <span style="color:var(--danger)">*</span></label>
         <input type="text" id="location" placeholder="Enter location">
       </div>
 
       <div class="form-group">
-        <label>Event Description *</label>
+        <label>Event Description <span style="color:var(--danger)">*</span></label>
         <textarea id="description" rows="5" placeholder="Enter event description"></textarea>
       </div>
 
@@ -101,7 +111,12 @@
         <p id="uploadStatus" class="hint"></p>
       </div>
 
-      <button id="submitBtn" onclick="submitEvent()">Send</button>
+      <button id="submitBtn" onclick="submitEvent()" disabled style="
+        background:var(--border);color:var(--text-tertiary);
+        cursor:not-allowed;transition:all var(--transition)">
+        Send
+      </button>
+
       <p id="message" class="message"></p>
     </div>
   </div>
@@ -158,9 +173,16 @@
         if (event.eventTime) {
           document.getElementById('eventTime').value = toLocalDatetimeString(event.eventTime);
         }
+        if (event.eventEndTime) {
+          document.getElementById('eventEndTime').value = toLocalDatetimeString(event.eventEndTime);
+        }
         if (event.registrationDeadline) {
           document.getElementById('registrationDeadline').value = toLocalDatetimeString(event.registrationDeadline);
         }
+
+        // 資料填完後重新檢查按鈕狀態
+        checkFormValid();
+
       } catch (err) {
         console.error('載入活動資料失敗', err);
       }
@@ -241,10 +263,18 @@
         return;
       }
 
+      const eventEndTime = document.getElementById('eventEndTime').value;
+      if (eventEndTime && new Date(eventEndTime) <= new Date(eventTime)) {
+        message.textContent = '活動結束時間必須晚於活動開始時間！';
+        message.className = 'message error';
+        return;
+      }
+
       const body = {
         category,
         title,
         eventTime,
+        eventEndTime: eventEndTime || null,
         location,
         description,
         registrationDeadline: document.getElementById('registrationDeadline').value || null,
@@ -284,6 +314,40 @@
         message.className = 'message error';
       }
     }
+
+    // 監聽必填欄位變化
+    function checkFormValid() {
+      const category = document.getElementById('category').value;
+      const title = document.getElementById('title').value.trim();
+      const eventTime = document.getElementById('eventTime').value;
+      const location = document.getElementById('location').value.trim();
+      const description = document.getElementById('description').value.trim();
+
+      const btn = document.getElementById('submitBtn');
+      const isValid = category && title && eventTime && location && description;
+
+      if (isValid) {
+        btn.disabled = false;
+        btn.style.background = 'var(--brand)';
+        btn.style.color = 'white';
+        btn.style.cursor = 'pointer';
+      } else {
+        btn.disabled = true;
+        btn.style.background = 'var(--border)';
+        btn.style.color = 'var(--text-tertiary)';
+        btn.style.cursor = 'not-allowed';
+      }
+    }
+
+    // 綁定所有必填欄位的 input 事件
+    document.getElementById('category').addEventListener('change', checkFormValid);
+    document.getElementById('title').addEventListener('input', checkFormValid);
+    document.getElementById('eventTime').addEventListener('change', checkFormValid);
+    document.getElementById('location').addEventListener('input', checkFormValid);
+    document.getElementById('description').addEventListener('input', checkFormValid);
+
+    // 初始檢查（修改模式下資料填好後要啟用按鈕）
+    checkFormValid();
   </script>
 </body>
 </html>

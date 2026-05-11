@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>我的活動</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    .main-area {
+      margin-right: 0 !important;
+    }
+    .event-grid {
+      grid-template-columns: repeat(3, 1fr) !important;
+    }
+  </style>
 </head>
 <body>
   <div class="main-area">
@@ -45,7 +53,10 @@
           </div>
           <div class="card-body">
             <h3>${event.title}</h3>
-            <p>📅 ${new Date(event.eventTime).toLocaleDateString('zh-TW')}</p>
+            <p>📅 ${new Date(event.eventTime).toLocaleDateString('zh-TW')}${event.eventEndTime
+              ? ` - ${new Date(event.eventEndTime).toLocaleDateString('zh-TW')}`
+              : ''
+            }</p>
             <p>📍 ${event.location}</p>
             <p>狀態：${getStatusText(event.status)}</p>
             ${event.auditStatus === 'rejected' && event.rejectReason ? `

@@ -29,6 +29,9 @@
     max-width: 640px !important;
     width: 90% !important;
   }
+  .main-area {
+    margin-right: 0 !important;
+  }
 </style>
   
 
@@ -146,7 +149,10 @@
         }
         <span class="category-tag">${categoryMap[event.category]}</span>
         <h2 style="margin:10px 0">${event.title}</h2>
-        <p>📅 ${eventTime}</p>
+        <p>📅 ${eventTime} ${event.eventEndTime
+          ? ` - ${new Date(event.eventEndTime).toLocaleString('zh-TW')}`
+          : ''
+        }</p>
         <p>📍 ${event.location}</p>
         <p>💰 ${event.fee > 0 ? event.fee + ' 元' : '免費'}</p>
         <p>⏰ 報名截止：${deadline}</p>
