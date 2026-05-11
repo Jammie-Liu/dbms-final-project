@@ -41,18 +41,45 @@
       }
 
       list.innerHTML = events.map(event => `
-        <div class="event-card"
-          onclick="window.location.href='event.html?id=${event.eventID}'">
+        <div class="event-card" onclick="goToEvent(${event.eventID})">
           <div class="card-body">
             <h3>${event.title}</h3>
             <p>📅 ${new Date(event.eventTime).toLocaleDateString('zh-TW')}</p>
             <p>📍 ${event.location}</p>
             <p style="color:#aaa;font-size:12px">
-              瀏覽時間：${new Date(event.viewedAt).toLocaleString('zh-TW')}
+              瀏覽時間：${toTWTime(event.viewedAt)}
             </p>
           </div>
         </div>
       `).join('');
+    }
+
+    // 轉換時區
+    function toTWTime(dateStr) {
+      const date = new Date(dateStr);
+
+      // 加 8 小時
+      date.setHours(date.getHours() + 8);
+
+      return date.toLocaleString('zh-TW', {
+        timeZone: 'Asia/Taipei',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+    }
+
+    async function goToEvent(eventID) {
+      try {
+        await fetch(`/api/events/${eventID}/history`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+      } catch (err) {}
+      window.location.href = `event.html?id=${eventID}`;
     }
 
     loadHistory();

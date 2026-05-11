@@ -127,12 +127,12 @@
           <p class="folder-name">全部收藏</p>
         </div>
         ${allFolders.map(f => `
-  <div class="folder-card ${currentFolderID === f.folderID ? 'active' : ''}"
-    onclick="selectFolder(${f.folderID}, this)">
-    <div class="folder-icon">📂</div>
-    <p class="folder-name">${f.folderName}</p>
-  </div>
-`).join('')}
+        <div class="folder-card ${currentFolderID === f.folderID ? 'active' : ''}"
+          onclick="selectFolder(${f.folderID}, this)">
+          <div class="folder-icon">📂</div>
+          <p class="folder-name">${f.folderName}</p>
+        </div>
+      `).join('')}
        
       `;
     }
@@ -153,7 +153,7 @@
       }
 
       list.innerHTML = events.map(event => `
-        <div class="event-card" onclick="window.location.href='event.html?id=${event.eventID}'">
+        <div class="event-card" onclick="goToEvent(${event.eventID})">
           <div class="card-top">
             <span class="status-tag open">已收藏</span>
             <div class="card-actions">
@@ -301,6 +301,16 @@
       document.getElementById('deleteFolderBtn').style.display = 'none';
       loadFolders();
       loadFavorites();
+    }
+
+    async function goToEvent(eventID) {
+      try {
+        await fetch(`/api/events/${eventID}/history`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+      } catch (err) {}
+      window.location.href = `event.html?id=${eventID}`;
     }
   </script>
 </body>
