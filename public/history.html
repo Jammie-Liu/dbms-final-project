@@ -56,12 +56,7 @@
 
     // 轉換時區
     function toTWTime(dateStr) {
-      const date = new Date(dateStr);
-
-      // 加 8 小時
-      date.setHours(date.getHours() + 8);
-
-      return date.toLocaleString('zh-TW', {
+      return new Date(dateStr).toLocaleString('zh-TW', {
         timeZone: 'Asia/Taipei',
         year: 'numeric',
         month: '2-digit',

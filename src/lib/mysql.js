@@ -9,6 +9,7 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME,
   waitForConnections: true,
   connectionLimit: 10,
+  timezone: '+00:00',
 });
 
 // 用 promise 版本，這樣之後可以用 async/await
