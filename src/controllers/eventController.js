@@ -34,19 +34,22 @@ exports.getEvents = async (req, res) => {
 
     let registrationWeight = `CASE WHEN (e.registrationDeadline IS NULL OR e.registrationDeadline > NOW()) THEN 1 ELSE 0 END`;
 
+    // 新增：活動是否已結束
+    let notEndedWeight = `CASE WHEN (e.eventEndTime IS NULL AND e.eventTime > NOW()) OR (e.eventEndTime IS NOT NULL AND e.eventEndTime > NOW()) THEN 1 ELSE 0 END`;
+
     let orderSQL = '';
     if (sortBy === 'latest') {
-    // 最新發布：直接用發布時間排序
-    orderSQL = `e.publishedAt DESC`;
+      // 最新發布：直接用發布時間排序
+      orderSQL = `e.publishedAt DESC`;
     } else if (sortBy === 'registering') {
-    // 報名中：報名未截止的排前面，同樣狀態再按發布時間
-    orderSQL = `(${registrationWeight}) DESC, e.publishedAt DESC`;
+      // 報名中：報名未截止的排前面，同樣狀態再按發布時間
+      orderSQL = `(${registrationWeight}) DESC, e.publishedAt DESC`;
     } else if (sortBy === 'mostFavorited') {
-  // 收藏最多：收藏數排前面
-  orderSQL = `favoriteCount DESC, e.publishedAt DESC`;
+      // 收藏最多：收藏數排前面
+      orderSQL = `favoriteCount DESC, e.publishedAt DESC`;
     } else {
-    // 預設：分類權重 + 報名未過期 + 發布時間近
-    orderSQL = `(${categoryWeightSQL}) + (${registrationWeight}) DESC, e.publishedAt DESC`;
+      // 預設：分類權重 + 報名未過期 + 發布時間近
+      orderSQL = `(${notEndedWeight}) * 20 + (${categoryWeightSQL}) * 0.5 + (${registrationWeight}) * 10 DESC, e.publishedAt DESC`;
   }
 
     let whereSQL = `e.status = 'approved' AND e.auditStatus = 'approved'`;

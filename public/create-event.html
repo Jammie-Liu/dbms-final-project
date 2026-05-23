@@ -164,10 +164,10 @@
 
         // 時間轉換（UTC+8）
         function toLocalDatetimeString(dateStr) {
-          const date = new Date(dateStr);
-          const offset = 8 * 60;
-          const localDate = new Date(date.getTime() + offset * 60 * 1000);
-          return localDate.toISOString().slice(0, 16);
+          if (!dateStr) return '';
+          return new Date(dateStr).toLocaleString('sv-SE', {
+            timeZone: 'Asia/Taipei'
+          }).slice(0, 16).replace(' ', 'T');
         }
 
         if (event.eventTime) {

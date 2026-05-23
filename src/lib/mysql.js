@@ -9,7 +9,12 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME,
   waitForConnections: true,
   connectionLimit: 10,
-  timezone: '+00:00',
+  timezone: '+08:00',
+});
+
+// 每個連線建立時設定時區
+pool.on('connection', (connection) => {
+  connection.query("SET time_zone = '+08:00'");
 });
 
 // 用 promise 版本，這樣之後可以用 async/await

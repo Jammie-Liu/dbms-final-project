@@ -363,6 +363,9 @@ function applyFilter() {
   const category = [...selectedCategories].join(',');
 
   loadEventsWithFilter({ keyword, date, location, fee, hasMeal, hasGift, category });
+
+  // 關閉篩選 popup
+  document.getElementById('filterPanel').style.display = 'none';
 }
 
 // 清除篩選
