@@ -85,6 +85,7 @@ async function autoDeleteEvents() {
 
     for (const eventID of uniqueIDs) {
       // 依序刪除相關資料
+      await db.query('DELETE FROM Event_Tag WHERE eventID = ?', [eventID]);
       await db.query('DELETE FROM Notifications WHERE eventID = ?', [eventID]);
       await db.query('DELETE FROM Reports WHERE eventID = ?', [eventID]);
       await db.query('DELETE FROM Reviews WHERE eventID = ?', [eventID]);

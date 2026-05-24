@@ -27,7 +27,7 @@ async function loadEvents() {
     }
 
     list.innerHTML = events.map(event => `
-    <div class="event-card">
+    <div class="event-card" style="display:flex;flex-direction:column">
         <div class="card-top">
         ${currentTab === 'reported'
             ? `<div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -42,7 +42,7 @@ async function loadEvents() {
                 : `<span class="status-tag soon">待審核</span>`
         }
         </div>
-        <div class="card-body">
+        <div class="card-body" style="flex:1">
         <h3>${event.title}</h3>
         <p>👤 ${event.organizerName}</p>
         <p>📅 ${new Date(event.eventTime).toLocaleDateString('zh-TW')}${event.eventEndTime
@@ -65,13 +65,13 @@ async function loadEvents() {
             <p style="font-size:13px;color:var(--text-secondary)">${event.rejectReason}</p>
             </div>
         ` : ''}
-        <div style="margin-top:12px">
+        </div>
+        <div style="padding:0 16px 16px">
             <button onclick="viewDetail(${event.eventID})"
-                style="width:auto;padding:8px 16px;background:var(--bg);
+                style="width:100%;padding:8px 16px;background:var(--bg);
                 color:var(--text-primary);border:1.5px solid var(--border);font-size:13px">
                 👁️ View Detail
             </button>
-        </div>
         </div>
     </div>
     `).join('');

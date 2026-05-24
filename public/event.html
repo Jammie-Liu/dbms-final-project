@@ -158,7 +158,18 @@
         <p>⏰ 報名截止：${deadline}</p>
         ${event.hasMeal ? '<p>🍱 附餐食</p>' : ''}
         ${event.hasGift ? '<p>🎁 附贈品</p>' : ''}
-        ${event.hashtag ? `<p style="color:var(--brand)">${event.hashtag}</p>` : ''}
+        ${event.hashtags && event.hashtags.length > 0
+          ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
+              ${event.hashtags.map(tag => `
+                <span style="
+                  background:var(--brand-light);color:var(--brand);
+                  padding:4px 10px;border-radius:20px;font-size:13px;font-weight:500">
+                  #${tag}
+                </span>
+              `).join('')}
+            </div>`
+          : ''
+        }
         ${event.registrationLink
           ? `<a href="${event.registrationLink}" target="_blank">
               <button style="margin-top:12px">立即報名</button>
