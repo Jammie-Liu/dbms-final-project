@@ -69,8 +69,18 @@
       </div>
 
       <div class="form-group">
-        <label>Hashtag</label>
-        <input type="text" id="hashtag" placeholder="e.g. #career #workshop">
+        <label>Hashtags</label>
+        <p class="hint">例：職涯、講座（不需要加 #）</p>
+        <input type="text" id="hashtagInput"
+          placeholder="輸入 hashtag 後按 Enter 或空白鍵新增"
+          style="margin-top:8px"
+          onkeydown="addHashtag(event)">
+        <div id="hashtagContainer" style="
+          display:flex;flex-wrap:wrap;gap:8px;
+          border:1.5px solid var(--border);border-radius:var(--radius-sm);
+          padding:8px 12px;margin-top:7px;min-height:46px;cursor:text"
+          onclick="document.getElementById('hashtagInput').focus()">
+        </div>
       </div>
 
       <div class="form-group">
@@ -153,6 +163,11 @@
         document.getElementById('registrationLink').value = event.registrationLink || '';
         document.getElementById('hashtag').value = event.hashtag || '';
 
+        if (event.hashtags && event.hashtags.length > 0) {
+          hashtags = event.hashtags;
+          renderHashtags();
+        }
+
         // 如果有舊圖片，顯示預覽
         if (event.imageURL) {
           uploadedImageURL = event.imageURL;
@@ -186,6 +201,42 @@
       } catch (err) {
         console.error('載入活動資料失敗', err);
       }
+    }
+
+
+    // Hashtags 管理函數
+    let hashtags = [];
+
+    function addHashtag(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        const input = document.getElementById('hashtagInput');
+        const tag = input.value.trim().replace('#', '');
+        if (tag && !hashtags.includes(tag)) {
+          hashtags.push(tag);
+          renderHashtags();
+        }
+        input.value = '';
+      }
+    }
+
+    function removeHashtag(tag) {
+      hashtags = hashtags.filter(t => t !== tag);
+      renderHashtags();
+    }
+
+    function renderHashtags() {
+      const container = document.getElementById('hashtagContainer');
+      container.innerHTML = hashtags.map(tag => `
+        <span style="
+          display:inline-flex;align-items:center;gap:6px;
+          background:var(--brand-light);color:var(--brand);
+          padding:4px 10px;border-radius:20px;font-size:13px;font-weight:500">
+          #${tag}
+          <span onclick="removeHashtag('${tag}')"
+            style="cursor:pointer;font-size:16px;line-height:1">×</span>
+        </span>
+      `).join('');
     }
 
     // 圖片預覽
@@ -279,7 +330,7 @@
         description,
         registrationDeadline: document.getElementById('registrationDeadline').value || null,
         registrationLink: document.getElementById('registrationLink').value || null,
-        hashtag: document.getElementById('hashtag').value || null,
+        hashtags: hashtags,  // 陣列
         fee: parseInt(document.getElementById('fee').value) || 0,
         hasMeal: document.getElementById('hasMeal').checked,
         hasGift: document.getElementById('hasGift').checked,
