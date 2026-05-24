@@ -9,6 +9,7 @@ router.use(verifyToken, (req, res, next) => {
   next();
 });
 
+router.get('/events/:eventID/audit-log', adminController.getAuditLog);
 router.get('/events/pending', adminController.getPendingEvents);      // 待審核
 router.get('/events/reported', adminController.getReportedEvents);    // 被檢舉
 router.get('/events/approved', adminController.getApprovedEvents);    // 已通過

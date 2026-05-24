@@ -63,10 +63,19 @@
 
       <div class="form-group">
         <label style="font-size:14px;font-weight:500;margin-bottom:8px;display:block">
-          退件原因 *
+          退件原因 <span style="color:var(--danger)">*</span>
         </label>
-        <textarea id="rejectReason" rows="4"
+        <textarea id="rejectReason" rows="3"
           placeholder="請說明活動不通過的原因..."
+          style="resize:none"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label style="font-size:14px;font-weight:500;margin-bottom:8px;display:block">
+          管理員備註（選填）
+        </label>
+        <textarea id="auditComment" rows="2"
+          placeholder="內部備註，主辦人不會看到..."
           style="resize:none"></textarea>
       </div>
 

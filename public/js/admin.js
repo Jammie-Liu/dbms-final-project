@@ -143,6 +143,52 @@ async function viewDetail(eventID) {
         }
     }
 
+    // 取得審核歷史
+    const logRes = await fetch(`/api/admin/events/${eventID}/audit-log`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const logs = await logRes.json();
+
+    const auditLogSection = logs.length > 0 ? `
+        <hr style="margin:16px 0">
+        <h3 style="margin-bottom:12px">📋 審核歷史</h3>
+        <div style="display:flex;flex-direction:column;gap:10px">
+            ${logs.map(log => `
+                <div style="background:var(--bg);border-radius:var(--radius-md);
+                    padding:14px 16px;border:1px solid var(--border)">
+                    <div style="display:flex;justify-content:space-between;
+                        align-items:center;margin-bottom:8px">
+                        <span style="font-weight:600;font-size:14px">
+                            第 ${log.ordinal_num} 次審核
+                        </span>
+                        <span class="status-tag ${log.result === 'approved' ? 'open' : 'cancelled'}">
+                            ${log.result === 'approved' ? '✅ 通過' : '❌ 退件'}
+                        </span>
+                    </div>
+                    <p style="font-size:12px;color:var(--text-tertiary);margin-bottom:6px">
+                        審核類型：${log.audit_reason === 'general' ? '一般審核' : '檢舉審核'} ・
+                        審核人：${log.adminName} ・
+                        ${new Date(log.audit_time).toLocaleString('zh-TW')}
+                    </p>
+                    ${log.result === 'rejected' && log.rejectReason ? `
+                        <div style="background:#fef2f2;border-radius:var(--radius-sm);
+                            padding:8px 12px;margin-top:6px">
+                            <p style="font-size:13px;color:var(--danger)">
+                                退件原因：${log.rejectReason}
+                            </p>
+                        </div>
+                    ` : ''}
+                    ${log.comment ? `
+                        <p style="font-size:12px;color:var(--text-tertiary);
+                            margin-top:6px;font-style:italic">
+                            備註：${log.comment}
+                        </p>
+                    ` : ''}
+                </div>
+            `).join('')}
+        </div>
+    ` : '';
+
     const categoryMap = {
         career: '🎓 職涯與學術成長',
         arts: '🎨 藝文與生活體驗',
@@ -151,33 +197,34 @@ async function viewDetail(eventID) {
     };
 
     document.getElementById('detailContent').innerHTML = `
-    <h2 style="margin-bottom:16px">${event.title}</h2>
-    ${event.imageURL
-        ? `<img src="${event.imageURL}" style="width:100%;border-radius:12px;margin-bottom:16px">`
-        : ''
-    }
-    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
-        <p>🗂️ ${categoryMap[event.category] || event.category}</p>
-        <p>👤 主辦人：${event.organizerName}</p>
-        <p>📅 活動時間：${new Date(event.eventTime).toLocaleString('zh-TW')}</p>
-        <p>📍 地點：${event.location}</p>
-        <p>💰 費用：${event.fee > 0 ? event.fee + ' 元' : '免費'}</p>
-        ${event.registrationDeadline
-            ? `<p>⏰ 報名截止：${new Date(event.registrationDeadline).toLocaleString('zh-TW')}</p>`
+        <h2 style="margin-bottom:16px">${event.title}</h2>
+        ${event.imageURL
+            ? `<img src="${event.imageURL}" style="width:100%;border-radius:12px;margin-bottom:16px">`
             : ''
         }
-        ${event.registrationLink
-            ? `<p>🔗 報名連結：<a href="${event.registrationLink}" target="_blank">${event.registrationLink}</a></p>`
-            : ''
-        }
-        ${event.hashtag ? `<p>🏷️ ${event.hashtag}</p>` : ''}
-        ${event.hasMeal ? '<p>🍱 附餐食</p>' : ''}
-        ${event.hasGift ? '<p>🎁 附贈品</p>' : ''}
-    </div>
-    <hr style="margin-bottom:16px">
-    <h3 style="margin-bottom:8px">活動說明</h3>
-    <p style="line-height:1.7">${event.description}</p>
-    ${reportSection}
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+            <p>🗂️ ${categoryMap[event.category] || event.category}</p>
+            <p>👤 主辦人：${event.organizerName}</p>
+            <p>📅 活動時間：${new Date(event.eventTime).toLocaleString('zh-TW')}</p>
+            <p>📍 地點：${event.location}</p>
+            <p>💰 費用：${event.fee > 0 ? event.fee + ' 元' : '免費'}</p>
+            ${event.registrationDeadline
+                ? `<p>⏰ 報名截止：${new Date(event.registrationDeadline).toLocaleString('zh-TW')}</p>`
+                : ''
+            }
+            ${event.registrationLink
+                ? `<p>🔗 報名連結：<a href="${event.registrationLink}" target="_blank">${event.registrationLink}</a></p>`
+                : ''
+            }
+            ${event.hashtag ? `<p>🏷️ ${event.hashtag}</p>` : ''}
+            ${event.hasMeal ? '<p>🍱 附餐食</p>' : ''}
+            ${event.hasGift ? '<p>🎁 附贈品</p>' : ''}
+        </div>
+        <hr style="margin-bottom:16px">
+        <h3 style="margin-bottom:8px">活動說明</h3>
+        <p style="line-height:1.7">${event.description}</p>
+        ${reportSection}
+        ${auditLogSection}
     `;
 
     // 已通過或退件的活動，隱藏審核按鈕
@@ -204,10 +251,12 @@ function auditFromDetail(result) {
   if (result === 'rejected') {
     // 開退件理由 popup
     document.getElementById('rejectReason').value = '';
+    document.getElementById('auditComment').value = '';
     document.getElementById('rejectPopup').style.display = 'flex';
   } else {
-    // 直接通過
-    audit(currentEventID, 'approved', null);
+    // 通過：直接審核，帶入 auditReason
+    const auditReason = currentTab === 'reported' ? 'reported' : 'general';
+    audit(currentEventID, 'approved', null, null, auditReason);
     closeDetail();
   }
 }
@@ -218,25 +267,32 @@ function closeRejectPopup() {
 
 async function confirmReject() {
   const reason = document.getElementById('rejectReason').value.trim();
+  const comment = document.getElementById('auditComment').value.trim();
   if (!reason) {
     alert('請填寫退件原因！');
     return;
   }
-
-  await audit(currentEventID, 'rejected', reason);
+  const auditReason = currentTab === 'reported' ? 'reported' : 'general';
+  await audit(currentEventID, 'rejected', reason, comment, auditReason);
   closeRejectPopup();
   closeDetail();
 }
 
-async function audit(eventID, result, rejectReason) {
-  await fetch(`/api/admin/events/${eventID}/audit`, {
+async function audit(eventID, result, rejectReason, comment, auditReason) {
+  const res = await fetch(`/api/admin/events/${eventID}/audit`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     },
-    body: JSON.stringify({ result, rejectReason })
+    body: JSON.stringify({ result, rejectReason, comment, auditReason })
   });
+
+  if (!res.ok) {
+    const data = await res.json();
+    alert(data.message);
+  }
+
   loadEvents();
 }
 

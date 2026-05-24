@@ -68,6 +68,15 @@
                 <p style="font-size:13px;color:var(--text-secondary)">${event.rejectReason}</p>
               </div>
             ` : ''}
+            ${event.reaudit_count > 0 ? `
+            <p style="font-size:12px;color:var(--text-tertiary);margin-top:5px">
+              已審核 ${event.reaudit_count} 次
+              ${event.reaudit_count >= 3
+                ? '（已達重審上限）'
+                : `（剩餘 ${3 - event.reaudit_count} 次重審機會）`
+              }
+            </p>
+          ` : ''}
           </div>
         </div>
       `).join('');

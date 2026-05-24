@@ -73,17 +73,48 @@ exports.getRejectedEvents = async (req, res) => {
 // 審核活動
 exports.auditEvent = async (req, res) => {
   const { eventID } = req.params;
-  const { result, rejectReason } = req.body;
+  const { result, rejectReason, comment, auditReason } = req.body;
+  const adminID = req.user.userID;
 
   try {
+    // 查目前是第幾次審核
+    const [countRows] = await db.query(
+      'SELECT COUNT(*) AS count FROM Audit_Log WHERE eventID = ?',
+      [eventID]
+    );
+    const ordinal_num = countRows[0].count + 1;
+
+    // 檢查是否超過重審上限（3次）
+    if (ordinal_num > 3) {
+      return res.status(400).json({ message: '此活動已達重審上限，無法再審核' });
+    }
+
+    // 更新活動審核狀態
     await db.query(
-      `UPDATE Events SET auditStatus = ?, status = ?, rejectReason = ? WHERE eventID = ?`,
-      [result, result === 'approved' ? 'approved' : 'rejected', rejectReason || null, eventID]
+      `UPDATE Events SET
+        auditStatus = ?,
+        status = ?,
+        rejectReason = ?,
+        reaudit_count = ?
+       WHERE eventID = ?`,
+      [result, result === 'approved' ? 'approved' : 'rejected',
+       rejectReason || null, ordinal_num, eventID]
     );
 
+    // 如果是被檢舉的審核，更新 Reports
+    if (auditReason === 'reported') {
+      await db.query(
+        `UPDATE Reports SET isVerified = ? WHERE eventID = ?`,
+        [result === 'rejected' ? 1 : 0, eventID]
+      );
+    }
+
+    // 寫入 Audit_Log
     await db.query(
-      `UPDATE Reports SET isVerified = ? WHERE eventID = ?`,
-      [result === 'rejected' ? 1 : 0, eventID]
+      `INSERT INTO Audit_Log
+        (eventID, adminID, result, audit_reason, comment, ordinal_num, rejectReason)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [eventID, adminID, result, auditReason || 'general', comment || null, ordinal_num, rejectReason || null]
     );
 
     res.json({ message: '審核完成' });
@@ -104,6 +135,25 @@ exports.verifyReport = async (req, res) => {
       [isVerified ? 1 : 0, reportID]
     );
     res.json({ message: '檢舉審核完成' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: '伺服器錯誤' });
+  }
+};
+
+// 取得審核歷史
+exports.getAuditLog = async (req, res) => {
+  const { eventID } = req.params;
+  try {
+    const [logs] = await db.query(
+      `SELECT al.*, u.username AS adminName
+       FROM Audit_Log al
+       JOIN Users u ON al.adminID = u.userID
+       WHERE al.eventID = ?
+       ORDER BY al.ordinal_num ASC`,
+      [eventID]
+    );
+    res.json(logs);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: '伺服器錯誤' });
