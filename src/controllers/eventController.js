@@ -253,19 +253,6 @@ exports.recordHistory = async (req, res) => {
   }
 };
 
-// 【取得單一活動詳情】
-exports.getEventDetail = async (req, res) => {
-  const { eventID } = req.params;
-  try {
-    const [rows] = await db.query('SELECT * FROM Events WHERE eventID = ?', [eventID]);
-    if (rows.length === 0) return res.status(404).json({ message: '找不到此活動' });
-    res.json(rows[0]);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: '伺服器錯誤' });
-  }
-};
-
 // 【取得活動詳細（含評價）】
 exports.getEventDetail = async (req, res) => {
   const { eventID } = req.params;
@@ -285,7 +272,7 @@ exports.getEventDetail = async (req, res) => {
     const event = eventRows[0];
 
     // 取得 hashtags（透過關聯表）
-    const [hashtags] = await db.query(
+    const [hashtagRows] = await db.query(
       `SELECT h.hashtag
        FROM Event_Tag et
        JOIN Hashtags h
@@ -293,7 +280,7 @@ exports.getEventDetail = async (req, res) => {
        WHERE et.eventID = ?`,
       [eventID]
     );
-    event.hashtags = hashtags.map(h => h.hashtag);
+    event.hashtags = hashtagRows.map(h => h.hashtag);
 
     // 取得評價
     const [reviews] = await db.query(

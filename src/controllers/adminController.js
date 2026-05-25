@@ -89,6 +89,16 @@ exports.auditEvent = async (req, res) => {
       return res.status(400).json({ message: '此活動已達重審上限，無法再審核' });
     }
 
+    // 取得活動資訊（標題 + 主辦人ID）
+    const [eventRows] = await db.query(
+      'SELECT title, organizerID FROM Events WHERE eventID = ?',
+      [eventID]
+    );
+    if (eventRows.length === 0) {
+      return res.status(404).json({ message: '活動不存在' });
+    }
+    const { title, organizerID } = eventRows[0];
+
     // 更新活動審核狀態
     await db.query(
       `UPDATE Events SET
@@ -115,6 +125,17 @@ exports.auditEvent = async (req, res) => {
         (eventID, adminID, result, audit_reason, comment, ordinal_num, rejectReason)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [eventID, adminID, result, auditReason || 'general', comment || null, ordinal_num, rejectReason || null]
+    );
+
+    // 通知主辦方
+    const notifMessage = result === 'approved'
+      ? `🎉 你的活動「${title}」已審核通過！`
+      : `❗️ 你的活動「${title}」審核未通過，原因：${rejectReason}`;
+
+    await db.query(
+      `INSERT INTO Notifications (userID, eventID, message)
+       VALUES (?, ?, ?)`,
+      [organizerID, eventID, notifMessage]
     );
 
     res.json({ message: '審核完成' });

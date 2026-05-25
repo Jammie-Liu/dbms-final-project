@@ -216,7 +216,18 @@ async function viewDetail(eventID) {
                 ? `<p>🔗 報名連結：<a href="${event.registrationLink}" target="_blank">${event.registrationLink}</a></p>`
                 : ''
             }
-            ${event.hashtag ? `<p>🏷️ ${event.hashtag}</p>` : ''}
+            ${event.hashtags && event.hashtags.length > 0
+                ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
+                    <span>🏷️</span>
+                    ${event.hashtags.map(tag => `
+                        <span style="background:var(--brand-light);color:var(--brand);
+                            padding:4px 10px;border-radius:20px;font-size:13px;font-weight:500">
+                            #${tag}
+                        </span>
+                    `).join('')}
+                    </div>`
+                : ''
+            }
             ${event.hasMeal ? '<p>🍱 附餐食</p>' : ''}
             ${event.hasGift ? '<p>🎁 附贈品</p>' : ''}
         </div>

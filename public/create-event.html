@@ -161,12 +161,6 @@
         document.getElementById('hasMeal').checked = event.hasMeal === 1;
         document.getElementById('hasGift').checked = event.hasGift === 1;
         document.getElementById('registrationLink').value = event.registrationLink || '';
-        document.getElementById('hashtag').value = event.hashtag || '';
-
-        if (event.hashtags && event.hashtags.length > 0) {
-          hashtags = event.hashtags;
-          renderHashtags();
-        }
 
         // 如果有舊圖片，顯示預覽
         if (event.imageURL) {
@@ -193,6 +187,12 @@
         }
         if (event.registrationDeadline) {
           document.getElementById('registrationDeadline').value = toLocalDatetimeString(event.registrationDeadline);
+        }
+
+        // 載入 hashtags
+        if (event.hashtags && event.hashtags.length > 0) {
+          hashtags = [...event.hashtags];
+          renderHashtags();
         }
 
         // 資料填完後重新檢查按鈕狀態
