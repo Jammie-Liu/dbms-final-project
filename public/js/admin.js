@@ -10,13 +10,15 @@ async function loadEvents() {
     const list = document.getElementById('adminEventList');
     list.innerHTML = '<p class="no-events">載入中...</p>';
 
-    let url = '';
-    if (currentTab === 'pending') url = '/api/admin/events/pending';
-    else if (currentTab === 'reported') url = '/api/admin/events/reported';
-    else if (currentTab === 'approved') url = '/api/admin/events/approved';
-    else if (currentTab === 'rejected') url = '/api/admin/events/rejected';
+    const urlMap = {
+        pending: '/api/admin/events/pending',
+        reported: '/api/admin/events/reported',
+        approved: '/api/admin/events/approved',
+        rejected: '/api/admin/events/rejected',
+        'reported-success': '/api/admin/events/reported-success'
+    };
 
-    const res = await fetch(url, {
+    const res = await fetch(urlMap[currentTab], {
         headers: { 'Authorization': `Bearer ${token}` }
     });
     const events = await res.json();
@@ -29,18 +31,20 @@ async function loadEvents() {
     list.innerHTML = events.map(event => `
     <div class="event-card" style="display:flex;flex-direction:column">
         <div class="card-top">
-        ${currentTab === 'reported'
-            ? `<div style="display:flex;gap:6px;flex-wrap:wrap">
-                ${event.reportReasons.split(',').map(r => `
-                <span class="status-tag cancelled">${getReasonLabel(r)}</span>
-                `).join('')}
-            </div>`
-            : currentTab === 'approved'
-            ? `<span class="status-tag open">已通過</span>`
-            : currentTab === 'rejected'
-                ? `<span class="status-tag cancelled">已退件</span>`
-                : `<span class="status-tag soon">待審核</span>`
-        }
+            ${currentTab === 'reported'
+                ? `<div style="display:flex;gap:6px;flex-wrap:wrap">
+                    ${event.reportReasons.split(',').map(r => `
+                        <span class="status-tag cancelled">${getReasonLabel(r)}</span>
+                    `).join('')}
+                </div>`
+                : currentTab === 'approved'
+                    ? `<span class="status-tag open">已通過</span>`
+                    : currentTab === 'rejected'
+                        ? `<span class="status-tag cancelled">已退件</span>`
+                        : currentTab === 'reported-success'
+                            ? `<span class="status-tag cancelled">🔴 檢舉成立</span>`
+                            : `<span class="status-tag soon">待審核</span>`
+            }
         </div>
         <div class="card-body" style="flex:1">
         <h3>${event.title}</h3>
@@ -51,10 +55,18 @@ async function loadEvents() {
         }</p>
         <p>📍 ${event.location}</p>
         ${currentTab === 'reported'
-        ? `<p style="color:var(--danger);font-size:13px;margin-top:4px">
-                被檢舉 ${event.reportCount} 次
+            ? `<p style="color:var(--danger);font-size:13px;margin-top:4px">
+                    被檢舉 ${event.reportCount} 次 ・
+                    屬實 ${event.verifiedCount || 0} 次
+                </p>`
+            : ''
+        }
+        ${currentTab === 'reported-success'
+          ? `<p style="color:var(--danger);font-size:13px;margin-top:4px">
+              總檢舉 ${event.reportCount} 次 ・
+              屬實 ${event.verifiedCount} 次
             </p>`
-        : ''
+          : ''
         }
         ${currentTab === 'rejected' && event.rejectReason ? `
             <div style="margin-top:10px;padding:10px 12px;background:#fef2f2;
@@ -100,47 +112,80 @@ async function viewDetail(eventID) {
     // 如果是被檢舉的 tab，也抓檢舉詳情
     let reportSection = '';
     if (currentTab === 'reported') {
-        const reportRes = await fetch(`/api/admin/events/reported`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        const reportRes = await fetch(`/api/admin/events/${eventID}/reports`, {
+            headers: { 'Authorization': `Bearer ${token}` }
         });
-        const reportedEvents = await reportRes.json();
-        const reportedEvent = reportedEvents.find(e => e.eventID === eventID);
+        const reports = await reportRes.json();
 
-        if (reportedEvent) {
-        const reasons = reportedEvent.reportReasons
-            ? reportedEvent.reportReasons.split(',').map(r => getReasonLabel(r.trim())).join('、')
-            : '';
-        const details = reportedEvent.reportDetails
-            ? reportedEvent.reportDetails.split('|').map(d => d.trim()).filter(d => d && d !== 'null')
-            : [];
+        // 計算統計
+        const totalReports = reports.length;
+        const verifiedCount = reports.filter(r => r.isVerified === 1).length;
+        const canConfirm = totalReports >= 5 && verifiedCount >= 3;
 
         reportSection = `
             <hr style="margin:16px 0">
-            <h3 style="margin-bottom:12px;color:var(--danger)">🚨 檢舉資訊</h3>
-            <div style="background:#fef2f2;border-radius:var(--radius-md);padding:16px">
-                <p style="margin-bottom:8px">
-                    <b>檢舉次數：</b>${reportedEvent.reportCount} 次
+            <h3 style="margin-bottom:12px;color:var(--danger)">🚨 檢舉列表</h3>
+
+            <div style="background:#fef2f2;border-radius:var(--radius-md);
+                padding:12px 16px;margin-bottom:16px;
+                display:flex;justify-content:space-between;align-items:center"
+                data-total="${totalReports}"
+                data-verified="${verifiedCount}">
+                <p style="font-size:14px;color:var(--danger)">
+                    總檢舉 <b>${totalReports}</b> 次 ・ 屬實 <b>${verifiedCount}</b> 次
                 </p>
-                <p style="margin-bottom:8px">
-                    <b>檢舉原因：</b>${reasons}
-                </p>
-                ${details.length > 0 ? `
-                    <div style="margin-top:12px">
-                        <b>檢舉詳情：</b>
-                        <div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">
-                            ${details.map((d, i) => `
-                            <div style="background:white;border-radius:var(--radius-sm);
-                                padding:10px 14px;font-size:13px;color:var(--text-secondary);
-                                border:1px solid #fecaca">
-                                ${i + 1}. ${d}
-                            </div>
-                            `).join('')}
+                ${!canConfirm ? `
+                    <p style="font-size:12px;color:var(--text-tertiary)">
+                    需總檢舉 ≥ 5 且屬實 ≥ 3 才可核實
+                    </p>
+                ` : ''}
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:10px">
+                ${reports.map(r => `
+                    <div style="background:var(--bg);border-radius:var(--radius-md);
+                    padding:14px 16px;border:1px solid var(--border)">
+                    <div style="display:flex;justify-content:space-between;
+                        align-items:flex-start;margin-bottom:8px">
+                        <div>
+                        <p style="font-weight:600;font-size:14px">
+                            ${getReasonLabel(r.reason)}
+                        </p>
+                        <p style="font-size:12px;color:var(--text-tertiary)">
+                            👤 ${r.reporterName} ・
+                            ${new Date(r.createdAt).toLocaleDateString('zh-TW')}
+                        </p>
+                        </div>
+                        <div style="display:flex;gap:8px">
+                        ${r.isVerified === null ? `
+                            <button onclick="verifyReport(${r.reportID}, true)"
+                            style="width:auto;padding:6px 12px;margin:0;font-size:12px;
+                            background:#dcfce7;color:#15803d;border:1px solid #86efac">
+                            ✅ 屬實
+                            </button>
+                            <button onclick="verifyReport(${r.reportID}, false)"
+                            style="width:auto;padding:6px 12px;margin:0;font-size:12px;
+                            background:#fef2f2;color:var(--danger);border:1px solid #fecaca">
+                            ❌ 不實
+                            </button>
+                        ` : `
+                            <span class="status-tag ${r.isVerified === 1 ? 'open' : 'cancelled'}">
+                            ${r.isVerified === 1 ? '✅ 屬實' : '❌ 不實'}
+                            </span>
+                        `}
                         </div>
                     </div>
-                ` : '<p style="margin-top:8px;color:var(--text-tertiary);font-size:13px">無補充說明</p>'}
+                    ${r.detail ? `
+                        <p style="font-size:13px;color:var(--text-secondary);
+                        background:white;padding:8px 12px;border-radius:var(--radius-sm);
+                        border:1px solid var(--border)">
+                        ${r.detail}
+                        </p>
+                    ` : ''}
+                    </div>
+                `).join('')}
             </div>
         `;
-        }
     }
 
     // 取得審核歷史
@@ -238,18 +283,33 @@ async function viewDetail(eventID) {
         ${auditLogSection}
     `;
 
-    // 已通過或退件的活動，隱藏審核按鈕
-    if (currentTab === 'approved' || currentTab === 'rejected') {
+    if (currentTab === 'reported') {
+        // 被檢舉 tab：隱藏通過/不通過，顯示檢舉核實按鈕
         document.getElementById('approveBtn').style.display = 'none';
         document.getElementById('rejectBtn').style.display = 'none';
+        document.getElementById('confirmReportBtn').style.display = 'block';
+
+        // 判斷是否達到條件
+        const totalReports = parseInt(document.querySelector('#detailContent [data-total]')?.dataset.total || 0);
+        const verifiedCount = parseInt(document.querySelector('#detailContent [data-verified]')?.dataset.verified || 0);
+        const canConfirm = totalReports >= 5 && verifiedCount >= 3;
+
+        const btn = document.getElementById('confirmReportBtn');
+        btn.disabled = !canConfirm;
+        btn.style.background = canConfirm ? 'var(--danger)' : 'var(--border)';
+        btn.style.color = canConfirm ? 'white' : 'var(--text-tertiary)';
+        btn.style.cursor = canConfirm ? 'pointer' : 'not-allowed';
+    } else if (currentTab === 'approved' || currentTab === 'rejected' || currentTab === 'reported-success') {
+        document.getElementById('approveBtn').style.display = 'none';
+        document.getElementById('rejectBtn').style.display = 'none';
+        document.getElementById('confirmReportBtn').style.display = 'none';
     } else {
         document.getElementById('approveBtn').style.display = 'block';
         document.getElementById('rejectBtn').style.display = 'block';
+        document.getElementById('confirmReportBtn').style.display = 'none';
     }
 
     document.getElementById('detailPopup').style.display = 'flex';
-
-    
 }
 
 function closeDetail() {
@@ -317,6 +377,39 @@ function setTab(tab, btn) {
 function logout() {
     localStorage.clear();
     window.location.href = '../login.html';
+}
+
+async function verifyReport(reportID, isVerified) {
+  await fetch(`/api/admin/reports/${reportID}/verify`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ isVerified })
+  });
+
+  // 重新載入 View Detail
+  viewDetail(currentEventID);
+}
+
+async function confirmReport(eventID) {
+  if (!confirm('確定要核實此檢舉嗎？\n活動將被下架，主辦人將被封鎖 1 年。')) return;
+
+  const res = await fetch(`/api/admin/events/${eventID}/confirm-report`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+
+  const data = await res.json();
+
+  if (res.ok) {
+    alert('檢舉核實成功！');
+    closeDetail();
+    loadEvents();
+  } else {
+    alert(data.message);
+  }
 }
 
 loadEvents();

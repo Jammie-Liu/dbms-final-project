@@ -52,7 +52,7 @@ exports.getEvents = async (req, res) => {
       orderSQL = `(${notEndedWeight}) * 20 + (${categoryWeightSQL}) * 0.5 + (${registrationWeight}) * 10 DESC, e.publishedAt DESC`;
   }
 
-    let whereSQL = `e.status = 'approved' AND e.auditStatus = 'approved'`;
+    let whereSQL = `e.status = 'approved' AND e.auditStatus = 'approved' AND e.isReported = 0`;
     const params = [];
 
     if (category) {
@@ -89,7 +89,7 @@ exports.searchEvents = async (req, res) => {
   const { keyword, category, date, location, fee, hasMeal, hasGift } = req.query;
 
   try {
-    let conditions = ["e.status = 'approved'", "e.auditStatus = 'approved'"];
+    let conditions = ["e.status = 'approved'", "e.auditStatus = 'approved'", "e.isReported = 0"];
     let params = [];
 
     if (keyword) {
