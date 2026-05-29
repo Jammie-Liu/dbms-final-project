@@ -271,10 +271,15 @@
         })
       });
 
+      const data = await res.json();
+
       if (res.ok) {
         closePopup();
         alert('評價送出成功！');
         loadReviews();
+      } else {
+        alert(data.message);  // 顯示「你已經評價過這個活動了」
+        closePopup();
       }
     }
 

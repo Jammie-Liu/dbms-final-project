@@ -17,5 +17,18 @@ pool.on('connection', (connection) => {
   connection.query("SET time_zone = '+08:00'");
 });
 
-// 用 promise 版本，這樣之後可以用 async/await
-module.exports = pool.promise();
+const promisePool = pool.promise();
+
+// 支援 getConnection（用於 Transaction）
+promisePool.getConnection = () => {
+  return new Promise((resolve, reject) => {
+    pool.getConnection((err, connection) => {
+      if (err) return reject(err);
+      const promiseConnection = connection.promise();
+      promiseConnection.release = () => connection.release();
+      resolve(promiseConnection);
+    });
+  });ㄎ
+};
+
+module.exports = promisePool;

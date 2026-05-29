@@ -151,6 +151,19 @@ exports.createEvent = async (req, res) => {
     const deleteAt = new Date();
     deleteAt.setFullYear(deleteAt.getFullYear() + 5);
 
+    // 自動計算報名截止時間
+    function getRegistrationDeadline(registrationDeadline, eventEndTime, eventTime) {
+      if (registrationDeadline) return registrationDeadline;
+      if (eventEndTime) return eventEndTime;
+      return eventTime;
+    }
+
+    const finalDeadline = getRegistrationDeadline(
+      registrationDeadline,
+      eventEndTime,
+      eventTime
+    );
+
     const [result] = await db.query(
       `INSERT INTO Events
         (organizerID, title, category, description, eventTime, eventEndTime, location,
@@ -158,7 +171,7 @@ exports.createEvent = async (req, res) => {
          hasMeal, hasGift, fee, deleteAt)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [organizerID, title, category, description, eventTime, eventEndTime || null, location,
-       registrationDeadline || null, registrationLink || null,
+       finalDeadline, registrationLink || null,
        imageURL || null, hasMeal ? 1 : 0, hasGift ? 1 : 0, fee || 0, deleteAt]
     );
 
@@ -222,6 +235,15 @@ exports.addReview = async (req, res) => {
   const userID = req.user.userID;
 
   try {
+    // 檢查是否已評價過
+    const [existing] = await db.query(
+      'SELECT reviewID FROM Reviews WHERE userID = ? AND eventID = ?',
+      [userID, eventID]
+    );
+    if (existing.length > 0) {
+      return res.status(400).json({ message: '你已經評價過這個活動了' });
+    }
+    
     await db.query(
       'INSERT INTO Reviews (userID, eventID, hasAttended, stars, content) VALUES (?, ?, ?, ?, ?)',
       [userID, eventID, hasAttended ? 1 : 0, hasAttended ? stars : null, content || null]
@@ -318,6 +340,19 @@ exports.updateEvent = async (req, res) => {
     if (rows.length === 0) return res.status(404).json({ message: '活動不存在' });
     if (rows[0].organizerID !== userID) return res.status(403).json({ message: '無權修改此活動' });
 
+    // 自動計算報名截止時間
+    function getRegistrationDeadline(registrationDeadline, eventEndTime, eventTime) {
+      if (registrationDeadline) return registrationDeadline;
+      if (eventEndTime) return eventEndTime;
+      return eventTime;
+    }
+
+    const finalDeadline = getRegistrationDeadline(
+      registrationDeadline,
+      eventEndTime,
+      eventTime
+    );
+
     await db.query(
       `UPDATE Events SET
         title = ?, category = ?, description = ?,
@@ -327,7 +362,7 @@ exports.updateEvent = async (req, res) => {
         auditStatus = 'unapproved'
        WHERE eventID = ?`,
       [title, category, description, eventTime, eventEndTime || null, location,
-        registrationDeadline || null, registrationLink || null,
+        finalDeadline, registrationLink || null,
         imageURL || null, hasMeal ? 1 : 0, hasGift ? 1 : 0, fee || 0,
         eventID]
     );

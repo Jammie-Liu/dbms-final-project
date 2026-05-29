@@ -53,8 +53,11 @@ exports.auditEvent = async (req, res) => {
   const { eventID } = req.params;
   const { result, rejectReason, comment, auditReason, version } = req.body;
   const adminID = req.user.userID;
+  const connection = await db.getConnection();
 
   try {
+    await connection.beginTransaction();
+
     // 查目前是第幾次審核
     const [countRows] = await db.query(
       'SELECT COUNT(*) AS count FROM Audit_Log WHERE eventID = ?',
@@ -64,18 +67,22 @@ exports.auditEvent = async (req, res) => {
 
     // 檢查是否超過重審上限（3次）
     if (ordinal_num > 3) {
+      await connection.rollback();
       return res.status(400).json({ message: '此活動已達重審上限，無法再審核' });
     }
 
     // 取得活動資訊（標題 + 主辦人ID）
-    const [eventRows] = await db.query(
+    const [eventRows] = await connection.query(
       'SELECT version, title, organizerID FROM Events WHERE eventID = ?',
       [eventID]
     );
+
     if (eventRows.length === 0) {
       return res.status(404).json({ message: '活動不存在' });
     }
+
     if (eventRows[0].version !== version) {
+      await connection.rollback();
       return res.status(409).json({
         message: '此活動已被其他管理員審核，請重新整理後再試'
       });
@@ -97,6 +104,7 @@ exports.auditEvent = async (req, res) => {
 
     // 如果 affectedRows = 0，代表已被其他人搶先更新
     if (updateResult.affectedRows === 0) {
+      await connection.rollback();
       return res.status(409).json({
         message: '此活動已被其他管理員審核，請重新整理後再試'
       });
@@ -104,14 +112,14 @@ exports.auditEvent = async (req, res) => {
 
     // 如果是被檢舉的審核，更新 Reports
     if (auditReason === 'reported') {
-      await db.query(
+      await connection.query(
         `UPDATE Reports SET isVerified = ? WHERE eventID = ?`,
         [result === 'rejected' ? 1 : 0, eventID]
       );
     }
 
     // 寫入 Audit_Log
-    await db.query(
+    await connection.query(
       `INSERT INTO Audit_Log
         (eventID, adminID, result, audit_reason, comment, ordinal_num, rejectReason)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -123,16 +131,20 @@ exports.auditEvent = async (req, res) => {
       ? `🎉 你的活動「${title}」已審核通過！`
       : `❗️ 你的活動「${title}」審核未通過，原因：${rejectReason}`;
 
-    await db.query(
+    await connection.query(
       `INSERT INTO Notifications (userID, eventID, message)
        VALUES (?, ?, ?)`,
       [organizerID, eventID, notifMessage]
     );
 
+    await connection.commit();
     res.json({ message: '審核完成' });
   } catch (err) {
+    await connection.rollback();
     console.error(err);
-    res.status(500).json({ message: '伺服器錯誤' });
+    res.status(500).json({ message: '伺服器錯誤，操作已復原' });
+  } finally {
+    connection.release();
   }
 };
 
@@ -219,8 +231,11 @@ exports.verifyReport = async (req, res) => {
 exports.confirmReport = async (req, res) => {
   const { eventID } = req.params;
   const adminID = req.user.userID;
+  const connection = await db.getConnection();
 
   try {
+    await connection.beginTransaction();
+
     // 查詢檢舉統計
     const [stats] = await db.query(
       `SELECT
@@ -231,21 +246,24 @@ exports.confirmReport = async (req, res) => {
     );
 
     const { totalReports, verifiedReports } = stats[0];
-
     if (totalReports < 5 || verifiedReports < 3) {
       return res.status(400).json({
         message: `條件未達成（總檢舉 ${totalReports}/5，屬實 ${verifiedReports}/3）`
       });
     }
 
-    // 取得主辦人 ID
-    const [eventRows] = await db.query(
-      'SELECT organizerID, title FROM Events WHERE eventID = ?', [eventID]
+    // 檢查是否已經被核實過
+    const [eventCheck] = await db.query(
+      'SELECT isReported FROM Events WHERE eventID = ?', [eventID]
     );
-    const { organizerID, title } = eventRows[0];
+    if (eventCheck[0].isReported === 1) {
+      return res.status(409).json({ message: '此活動已被核實，請重新整理' });
+    }
+
+    const { organizerID, title } = eventCheck[0];
 
     // 標記活動為被檢舉成功（不顯示給使用者）
-    await db.query(
+    await connection.query(
       `UPDATE Events SET isReported = 1, status = 'cancelled' WHERE eventID = ?`,
       [eventID]
     );
@@ -253,7 +271,7 @@ exports.confirmReport = async (req, res) => {
     // 封鎖主辦人發活動權限 1 年
     const banUntil = new Date();
     banUntil.setFullYear(banUntil.getFullYear() + 1);
-    await db.query(
+    await connection.query(
       'UPDATE Users SET isBanned = 1, banUntil = ? WHERE userID = ?',
       [banUntil, organizerID]
     );
@@ -265,10 +283,14 @@ exports.confirmReport = async (req, res) => {
        `⚠️ 你的活動「${title}」因檢舉屬實已被下架，發布活動權限暫停 1 年`]
     );
 
+    await connection.commit();
     res.json({ message: '檢舉核實成功，活動已下架，主辦人已被封鎖' });
   } catch (err) {
+    await connection.rollback();
     console.error(err);
-    res.status(500).json({ message: '伺服器錯誤' });
+    res.status(500).json({ message: '伺服器錯誤，操作已復原' });
+  } finally {
+    connection.release();
   }
 };
 
