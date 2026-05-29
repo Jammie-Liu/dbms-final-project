@@ -5,6 +5,7 @@ if (!token || role !== 'admin') window.location.href = '../login.html';
 let currentTab = 'pending';
 let currentEventID = null;
 let currentEventVersion = 0;
+let currentDraftID = null;
 
 // 依據 tab 載入相對應的 event
 async function loadEvents() {
@@ -16,7 +17,8 @@ async function loadEvents() {
         reported: '/api/admin/events/reported',
         approved: '/api/admin/events/approved',
         rejected: '/api/admin/events/rejected',
-        'reported-success': '/api/admin/events/reported-success'
+        'reported-success': '/api/admin/events/reported-success',
+        'pending-drafts': '/api/admin/events/pending-drafts'
     };
 
     const res = await fetch(urlMap[currentTab], {
@@ -44,7 +46,9 @@ async function loadEvents() {
                         ? `<span class="status-tag cancelled">已退件</span>`
                         : currentTab === 'reported-success'
                             ? `<span class="status-tag cancelled">🔴 檢舉成立</span>`
-                            : `<span class="status-tag soon">待審核</span>`
+                            : currentTab === 'pending-drafts'
+                                ? ` <span class="status-tag soon">修改待審核</span>`
+                                : `<span class="status-tag soon">待審核</span>`
             }
         </div>
         <div class="card-body" style="flex:1">
@@ -262,7 +266,7 @@ async function viewDetail(eventID) {
                 : ''
             }
             ${event.registrationLink
-                ? `<p>🔗 報名連結：<a href="${event.registrationLink}" target="_blank">${event.registrationLink}</a></p>`
+                ? `<p>🔗 報名連結：<a href="${event.registrationLink}" target="_blank">點選此處前往報名網址</a></p>`
                 : ''
             }
             ${event.hashtags && event.hashtags.length > 0
@@ -314,6 +318,67 @@ async function viewDetail(eventID) {
     }
 
     document.getElementById('detailPopup').style.display = 'flex';
+
+    if (currentTab === 'pending-drafts') {
+        const draftRes = await fetch(`/api/admin/events/pending-drafts`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const drafts = await draftRes.json();
+        const draft = drafts.find(d => d.eventID === eventID);
+
+        if (draft) {
+            draftSection = `
+                <hr style="margin:16px 0">
+                <h3 style="margin-bottom:12px;color:var(--brand)">✏️ 修改版本內容</h3>
+                <div style="background:var(--brand-light);border-radius:var(--radius-md);padding:16px">
+                    <h3>${draft.title}</h3>
+                    ${draft.imageURL
+                        ? `<img src="${draft.imageURL}" style="width:100%;border-radius:12px;margin-bottom:16px">`
+                        : ''
+                    }
+                    <p>🗂️ 分類：${categoryMap[draft.category] || draft.category}</p>
+                    <p>👤 主辦人：${draft.organizerName}</p>
+                    <p>📅 時間：${new Date(draft.eventTime).toLocaleString('zh-TW')}</p>
+                    <p>📍 地點：${draft.location}</p>
+                    <p>💰 費用：${draft.fee > 0 ? draft.fee + ' 元' : '免費'}</p>
+                    ${draft.registrationDeadline
+                        ? `<p>⏰ 報名截止：${new Date(draft.registrationDeadline).toLocaleString('zh-TW')}</p>`
+                        : ''
+                    }
+                    ${draft.registrationLink
+                        ? `<p>🔗 報名連結：<a href="${draft.registrationLink}" target="_blank">點選此處前往報名網址</a></p>`
+                        : ''
+                    }
+                    ${draft.hashtags && draft.hashtags.length > 0
+                        ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
+                            <span>🏷️ hashtags：</span>
+                            ${draft.hashtags.map(tag => `
+                                <span style="background:var(--brand-light);color:var(--brand);
+                                    padding:4px 10px;border-radius:20px;font-size:13px;font-weight:500">
+                                    #${tag}
+                                </span>
+                            `).join('')}
+                            </div>`
+                        : ''
+                    }
+                    ${draft.hasMeal ? '<p>🍱 附餐食</p>' : ''}
+                    ${draft.hasGift ? '<p>🎁 附贈品</p>' : ''}
+                    <p>📄 說明：${draft.description}</p>
+                    ${auditLogSection}
+                </div>
+            `;
+
+            document.getElementById('detailContent').innerHTML = draftSection;
+
+            // 改變按鈕行為
+            document.getElementById('approveBtn').onclick = () => auditDraft(draft.draftID, 'approved');
+            document.getElementById('rejectBtn').onclick = () => {
+                currentDraftID = draft.draftID;
+                document.getElementById('rejectReason').value = '';
+                document.getElementById('rejectPopup').style.display = 'flex';
+            };
+        }
+    }
 }
 
 function closeDetail() {
@@ -347,10 +412,31 @@ async function confirmReject() {
     alert('請填寫退件原因！');
     return;
   }
-  const auditReason = currentTab === 'reported' ? 'reported' : 'general';
-  await audit(currentEventID, 'rejected', reason, comment, auditReason);
+
+  if (currentTab === 'pending-drafts') {
+    await auditDraft(currentDraftID, 'rejected', reason, comment);
+  } else {
+    const auditReason = currentTab === 'reported' ? 'reported' : 'general';
+    await audit(currentEventID, 'rejected', reason, comment, auditReason);
+  }
+
   closeRejectPopup();
   closeDetail();
+}
+
+async function auditDraft(draftID, result, rejectReason, comment) {
+  const res = await fetch(`/api/admin/drafts/${draftID}/audit`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ result, rejectReason, comment })
+  });
+
+  const data = await res.json();
+  if (!res.ok) alert(data.message);
+  loadEvents();
 }
 
 async function audit(eventID, result, rejectReason, comment, auditReason) {

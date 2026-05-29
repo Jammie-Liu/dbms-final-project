@@ -91,6 +91,7 @@
     function getAuditText(status) {
       if (status === 'approved') return '審核通過';
       if (status === 'rejected') return '審核未通過';
+      if (status === 'draft_pending') return '修改版本審核中';
       return '尚未審核';
     }
 

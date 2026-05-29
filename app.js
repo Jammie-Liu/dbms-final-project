@@ -5,6 +5,9 @@ require('dotenv').config();
 
 const app = express();
 
+// 啟動排程
+require('./src/lib/scheduler');
+
 // Middleware（每個 request 進來都會先跑這裡）
 app.use(cors());
 app.use(express.json());                // 讓 express 能讀懂 JSON body

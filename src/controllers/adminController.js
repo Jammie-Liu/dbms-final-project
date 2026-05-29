@@ -16,6 +16,24 @@ exports.getPendingEvents = async (req, res) => {
   }
 };
 
+// 取得草稿待審核列表
+exports.getPendingDrafts = async (req, res) => {
+  try {
+    const [drafts] = await db.query(
+      `SELECT d.*, e.title AS originalTitle, u.username AS organizerName
+       FROM EventDrafts d
+       JOIN Events e ON d.eventID = e.eventID
+       JOIN Users u ON d.organizerID = u.userID
+       WHERE d.auditStatus = 'unapproved'
+       ORDER BY d.createdAt ASC`
+    );
+    res.json(drafts);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: '伺服器錯誤' });
+  }
+};
+
 // 取得已通過的活動
 exports.getApprovedEvents = async (req, res) => {
   try {
@@ -139,6 +157,91 @@ exports.auditEvent = async (req, res) => {
 
     await connection.commit();
     res.json({ message: '審核完成' });
+  } catch (err) {
+    await connection.rollback();
+    console.error(err);
+    res.status(500).json({ message: '伺服器錯誤，操作已復原' });
+  } finally {
+    connection.release();
+  }
+};
+
+// 審核草稿
+exports.auditDraft = async (req, res) => {
+  const { draftID } = req.params;
+  const { result, rejectReason, comment } = req.body;
+  const adminID = req.user.userID;
+  const connection = await db.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const [draftRows] = await connection.query(
+      'SELECT * FROM EventDrafts WHERE draftID = ?', [draftID]
+    );
+    if (draftRows.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ message: '草稿不存在' });
+    }
+
+    const draft = draftRows[0];
+
+    if (result === 'approved') {
+      // 審核通過：把草稿內容更新到 Events
+      await connection.query(
+        `UPDATE Events SET
+          title = ?, category = ?, description = ?,
+          eventTime = ?, eventEndTime = ?, location = ?,
+          registrationDeadline = ?, registrationLink = ?,
+          imageURL = ?, hasMeal = ?, hasGift = ?, fee = ?,
+          auditStatus = 'approved'
+         WHERE eventID = ?`,
+        [draft.title, draft.category, draft.description,
+         draft.eventTime, draft.eventEndTime, draft.location,
+         draft.registrationDeadline, draft.registrationLink,
+         draft.imageURL, draft.hasMeal, draft.hasGift, draft.fee,
+         draft.eventID]
+      );
+
+      // 通知主辦方
+      await connection.query(
+        `INSERT INTO Notifications (userID, eventID, message) VALUES (?, ?, ?)`,
+        [draft.organizerID, draft.eventID,
+         `🎉 你的活動「${draft.title}」修改版本已審核通過！`]
+      );
+
+    } else {
+      // 審核不通過：恢復 Events 的 auditStatus，草稿標記為 rejected
+      await connection.query(
+        `UPDATE Events SET auditStatus = 'approved' WHERE eventID = ?`,
+        [draft.eventID]
+      );
+
+      // 通知主辦方
+      await connection.query(
+        `INSERT INTO Notifications (userID, eventID, message) VALUES (?, ?, ?)`,
+        [draft.organizerID, draft.eventID,
+         `📋 你的活動「${draft.title}」修改版本審核未通過，原因：${rejectReason}`]
+      );
+    }
+
+    // 更新草稿狀態
+    await connection.query(
+      `UPDATE EventDrafts SET auditStatus = ?, rejectReason = ? WHERE draftID = ?`,
+      [result, rejectReason || null, draftID]
+    );
+
+    // 寫入 Audit_Log
+    await connection.query(
+      `INSERT INTO Audit_Log
+        (eventID, adminID, result, audit_reason, comment, ordinal_num, rejectReason)
+       VALUES (?, ?, ?, 'general', ?, 1, ?)`,
+      [draft.eventID, adminID, result, comment || null, rejectReason || null]
+    );
+
+    await connection.commit();
+    res.json({ message: '審核完成' });
+
   } catch (err) {
     await connection.rollback();
     console.error(err);

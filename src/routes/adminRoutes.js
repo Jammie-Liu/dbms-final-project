@@ -19,5 +19,7 @@ router.get('/events/rejected', adminController.getRejectedEvents);    // 退件
 router.patch('/events/:eventID/audit', adminController.auditEvent);   // 審核結果
 router.patch('/reports/:reportID/verify', adminController.verifyReport); // 確認檢舉是否屬實
 router.post('/events/:eventID/confirm-report', adminController.confirmReport);
+router.get('/events/pending-drafts', adminController.getPendingDrafts);
+router.patch('/drafts/:draftID/audit', adminController.auditDraft);
 
 module.exports = router;
