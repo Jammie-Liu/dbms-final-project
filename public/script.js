@@ -229,9 +229,36 @@ function goToReportStep2() {
 
   // 顯示選擇的原因標籤
   document.getElementById('selectedReasonTag').textContent = reasonLabels[selected.value];
-
   document.getElementById('reportStep1').style.display = 'none';
   document.getElementById('reportStep2').style.display = 'block';
+
+  // 如果選「其他」，監聽 textarea 決定按鈕狀態
+  const submitBtn = document.querySelector('#reportStep2 button[onclick="submitReport()"]');
+  const detailTextarea = document.getElementById('reportDetail');
+
+  if (selected.value === 'other') {
+    // 初始設為灰色不可按
+    submitBtn.disabled = true;
+    submitBtn.style.background = 'var(--border)';
+    submitBtn.style.color = 'var(--text-tertiary)';
+    submitBtn.style.cursor = 'not-allowed';
+
+    // 監聽輸入，有內容才可按
+    detailTextarea.oninput = function () {
+      const hasContent = detailTextarea.value.trim().length > 0;
+      submitBtn.disabled = !hasContent;
+      submitBtn.style.background = hasContent ? 'var(--danger)' : 'var(--border)';
+      submitBtn.style.color = hasContent ? 'white' : 'var(--text-tertiary)';
+      submitBtn.style.cursor = hasContent ? 'pointer' : 'not-allowed';
+    };
+  } else {
+    // 非「其他」，按鈕正常可按
+    submitBtn.disabled = false;
+    submitBtn.style.background = 'var(--danger)';
+    submitBtn.style.color = 'white';
+    submitBtn.style.cursor = 'pointer';
+    detailTextarea.oninput = null;
+  }
 }
 
 function backToReportStep1() {
@@ -242,6 +269,12 @@ function backToReportStep1() {
 async function submitReport() {
   const selected = document.querySelector('input[name="reportReason"]:checked');
   const detail = document.getElementById('reportDetail').value;
+
+  // 選「其他」但沒填說明
+  if (selected.value === 'other' && !detail) {
+    alert('選擇「其他」時請填寫詳細說明！');
+    return;
+  }
 
   try {
     const res = await fetch(`/api/reports/${reportTargetEventID}`, {
@@ -475,12 +508,14 @@ async function loadNotifications() {
     }
 
     list.innerHTML = notifications.map(n => `
-      <div onclick="readNotif(${n.notificationID}, ${n.eventID})"
+      <div onclick="readNotif(${n.notificationID}, ${n.eventID}, '${n.message.replace(/'/g, "\\'")}')"
         style="padding:14px 20px;border-bottom:1px solid var(--border);
         cursor:pointer;transition:background 0.15s;
         background:${n.isRead ? 'white' : '#eff6ff'}">
         <div style="display:flex;align-items:flex-start;gap:10px">
-          <span style="font-size:20px;flex-shrink:0">🔔</span>
+          <span style="font-size:20px;flex-shrink:0">
+            ${n.message.includes('審核') ? '📋' : '🔔'}
+          </span>
           <div style="flex:1">
             <p style="font-size:13px;color:var(--text-primary);
               line-height:1.5;margin-bottom:4px">
@@ -511,14 +546,21 @@ function toggleNotifications() {
   if (notifOpen) loadNotifications();
 }
 
-async function readNotif(notificationID, eventID) {
+async function readNotif(notificationID, eventID, message) {
   // 標記已讀
   await fetch(`/api/notifications/${notificationID}/read`, {
     method: 'PATCH',
     headers: { 'Authorization': `Bearer ${token}` }
   });
-  // 跳到活動頁
-  window.location.href = `event.html?id=${eventID}`;
+
+  // 根據通知類型決定跳轉頁面
+  if (message.includes('審核通過') || message.includes('審核未通過')) {
+    // 審核通知 → 跳到我的活動頁面
+    window.location.href = `my-events.html`;
+  } else {
+    // 報名截止提醒 → 跳到活動詳情
+    window.location.href = `event.html?id=${eventID}`;
+  }
 }
 
 async function markAllRead() {

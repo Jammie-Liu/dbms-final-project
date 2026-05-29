@@ -22,9 +22,11 @@
   <!-- Tab Bar -->
   <div class="filter-bar">
     <button class="filter-btn active" onclick="setTab('pending', this)">📋 待審核</button>
+    <button class="filter-btn" onclick="setTab('pending-drafts', this)">✏️ 修改審核</button>
     <button class="filter-btn" onclick="setTab('reported', this)">🚨 被檢舉</button>
     <button class="filter-btn" onclick="setTab('approved', this)">✅ 已通過</button>
     <button class="filter-btn" onclick="setTab('rejected', this)">❌ 退件</button>
+    <button class="filter-btn" onclick="setTab('reported-success', this)">🔴 檢舉成立</button>
   </div>
 
   <!-- 活動列表 -->
@@ -46,6 +48,10 @@
         <button id="approveBtn" class="admin-general-btn approveBtn" onclick="auditFromDetail('approved')">
           通過
         </button>
+        <button id="confirmReportBtn" onclick="confirmReport(currentEventID)"
+          style="display:none;width:auto;padding:10px 24px">
+          ⚠️ 檢舉核實
+        </button>
       </div>
     </div>
   </div>
@@ -63,10 +69,19 @@
 
       <div class="form-group">
         <label style="font-size:14px;font-weight:500;margin-bottom:8px;display:block">
-          退件原因 *
+          退件原因 <span style="color:var(--danger)">*</span>
         </label>
-        <textarea id="rejectReason" rows="4"
+        <textarea id="rejectReason" rows="3"
           placeholder="請說明活動不通過的原因..."
+          style="resize:none"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label style="font-size:14px;font-weight:500;margin-bottom:8px;display:block">
+          管理員備註（選填）
+        </label>
+        <textarea id="auditComment" rows="2"
+          placeholder="內部備註，主辦人不會看到..."
           style="resize:none"></textarea>
       </div>
 

@@ -118,6 +118,53 @@
     </div>
   </div>
 
+  <!-- 編輯評價 popup -->
+  <div id="editReviewPopup" class="popup-overlay"
+    style="display:none;align-items:center;justify-content:center"
+    onclick="if(event.target===this) closeEditReview()">
+    <div class="popup-box" style="border-radius:var(--radius-xl);max-width:440px;width:90%">
+      <div class="popup-handle"></div>
+      <h3 style="margin-bottom:20px">編輯評價</h3>
+
+      <div style="margin-bottom:20px">
+        <p style="font-size:14px;font-weight:500;margin-bottom:12px">評分</p>
+        <div style="display:flex;gap:8px" id="editStarContainer">
+          <span class="edit-star" data-val="1" onclick="setEditStar(1)"
+            style="font-size:32px;cursor:pointer;opacity:0.3;transition:all 0.15s">⭐</span>
+          <span class="edit-star" data-val="2" onclick="setEditStar(2)"
+            style="font-size:32px;cursor:pointer;opacity:0.3;transition:all 0.15s">⭐</span>
+          <span class="edit-star" data-val="3" onclick="setEditStar(3)"
+            style="font-size:32px;cursor:pointer;opacity:0.3;transition:all 0.15s">⭐</span>
+          <span class="edit-star" data-val="4" onclick="setEditStar(4)"
+            style="font-size:32px;cursor:pointer;opacity:0.3;transition:all 0.15s">⭐</span>
+          <span class="edit-star" data-val="5" onclick="setEditStar(5)"
+            style="font-size:32px;cursor:pointer;opacity:0.3;transition:all 0.15s">⭐</span>
+        </div>
+        <p id="editStarLabel" style="font-size:13px;color:var(--text-tertiary);margin-top:8px">
+          請選擇星數
+        </p>
+      </div>
+
+      <div style="margin-bottom:20px">
+        <p style="font-size:14px;font-weight:500;margin-bottom:8px">評論（選填）</p>
+        <textarea id="editReviewContent" rows="4"
+          placeholder="分享你的活動體驗..."
+          style="resize:none"></textarea>
+      </div>
+
+      <div style="display:flex;gap:10px">
+        <button onclick="closeEditReview()" style="
+          flex:1;margin:0;background:var(--bg);
+          color:var(--text-primary);border:1.5px solid var(--border)">
+          取消
+        </button>
+        <button onclick="submitEditReview()" style="flex:1;margin:0">
+          儲存
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const token = localStorage.getItem('token');
     if (!token) window.location.href = 'login.html';
@@ -205,13 +252,28 @@
         return;
       }
 
+      const currentUserID = parseInt(localStorage.getItem('userID'));
+
       reviewList.innerHTML = event.reviews.map(r => `
         <div class="review-card">
           <div class="review-top">
             <span class="reviewer-name">${r.username}</span>
-            <span>${r.stars ? '⭐'.repeat(r.stars) : '（未評分）'}</span>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span>${r.stars ? '⭐'.repeat(r.stars) : '（未評分）'}</span>
+              ${r.userID === currentUserID ? `
+                <button onclick="openEditReview(${r.stars}, \`${(r.content || '').replace(/`/g, "'")}\`)"
+                  style="width:auto;padding:4px 10px;margin:0;font-size:12px;
+                  background:var(--bg);color:var(--text-secondary);
+                  border:1px solid var(--border);border-radius:20px">
+                  ✏️ 編輯
+                </button>
+              ` : ''}
+            </div>
           </div>
           <p style="font-size:14px;color:var(--text-secondary)">${r.content || ''}</p>
+          ${r.isEdited ? `
+            <p style="font-size:11px;color:var(--text-tertiary);margin-top:4px">（已編輯）</p>
+          ` : ''}
         </div>
       `).join('');
     }
@@ -271,10 +333,83 @@
         })
       });
 
+      const data = await res.json();
+
       if (res.ok) {
         closePopup();
         alert('評價送出成功！');
         loadReviews();
+      } else {
+        alert(data.message);  // 顯示「你已經評價過這個活動了」
+        closePopup();
+      }
+    }
+
+    let editSelectedStar = 0;
+
+    function openEditReview(currentStars, currentContent) {
+      editSelectedStar = currentStars || 0;
+      document.getElementById('editReviewContent').value = currentContent || '';
+
+      // 設定星星顯示
+      if (currentStars) {
+        setEditStar(currentStars);
+      } else {
+        document.getElementById('editStarLabel').textContent = '請選擇星數';
+        document.querySelectorAll('.edit-star').forEach(el => {
+          el.style.opacity = '0.3';
+          el.style.transform = 'scale(1)';
+        });
+      }
+
+      document.getElementById('editReviewPopup').style.display = 'flex';
+    }
+
+    function closeEditReview() {
+      document.getElementById('editReviewPopup').style.display = 'none';
+      editSelectedStar = 0;
+    }
+
+    function setEditStar(n) {
+      editSelectedStar = n;
+      const labels = ['', '很差', '普通', '還不錯', '很好', '非常好！'];
+      document.getElementById('editStarLabel').textContent = `${n} 顆星・${labels[n]}`;
+
+      document.querySelectorAll('.edit-star').forEach(el => {
+        const val = parseInt(el.dataset.val);
+        el.style.opacity = val <= n ? '1' : '0.3';
+        el.style.transform = val <= n ? 'scale(1.1)' : 'scale(1)';
+      });
+    }
+
+    async function submitEditReview() {
+      if (!editSelectedStar) {
+        alert('請選擇星數！');
+        return;
+      }
+
+      const content = document.getElementById('editReviewContent').value;
+
+      const res = await fetch(`/api/events/${eventID}/review`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          stars: editSelectedStar,
+          content
+        })
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        closeEditReview();
+        alert('評價已更新！');
+        loadReviews();
+      } else {
+        alert(data.message);
       }
     }
 

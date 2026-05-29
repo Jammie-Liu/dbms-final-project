@@ -13,6 +13,7 @@ router.post('/', verifyToken, eventController.createEvent);
 router.put('/:eventID', verifyToken, eventController.updateEvent);
 router.patch('/:eventID/cancel', verifyToken, eventController.cancelEvent);
 router.post('/:eventID/review', verifyToken, eventController.addReview);
+router.put('/:eventID/review', verifyToken, eventController.updateReview);
 router.post('/:eventID/history', verifyToken, eventController.recordHistory);
 const { upload } = require('../lib/cloudinary');
 

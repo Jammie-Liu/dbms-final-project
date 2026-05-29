@@ -52,7 +52,7 @@ exports.getEvents = async (req, res) => {
       orderSQL = `(${notEndedWeight}) * 20 + (${categoryWeightSQL}) * 0.5 + (${registrationWeight}) * 10 DESC, e.publishedAt DESC`;
   }
 
-    let whereSQL = `e.status = 'approved' AND e.auditStatus = 'approved'`;
+    let whereSQL = `e.status = 'approved' AND e.auditStatus IN ('approved', 'draft_pending') AND e.isReported = 0`;
     const params = [];
 
     if (category) {
@@ -89,7 +89,7 @@ exports.searchEvents = async (req, res) => {
   const { keyword, category, date, location, fee, hasMeal, hasGift } = req.query;
 
   try {
-    let conditions = ["e.status = 'approved'", "e.auditStatus = 'approved'"];
+    let conditions = ["e.status = 'approved'", "e.auditStatus IN ('approved', 'draft_pending')", "e.isReported = 0"];
     let params = [];
 
     if (keyword) {
@@ -151,6 +151,19 @@ exports.createEvent = async (req, res) => {
     const deleteAt = new Date();
     deleteAt.setFullYear(deleteAt.getFullYear() + 5);
 
+    // 自動計算報名截止時間
+    function getRegistrationDeadline(registrationDeadline, eventEndTime, eventTime) {
+      if (registrationDeadline) return registrationDeadline;
+      if (eventEndTime) return eventEndTime;
+      return eventTime;
+    }
+
+    const finalDeadline = getRegistrationDeadline(
+      registrationDeadline,
+      eventEndTime,
+      eventTime
+    );
+
     const [result] = await db.query(
       `INSERT INTO Events
         (organizerID, title, category, description, eventTime, eventEndTime, location,
@@ -158,7 +171,7 @@ exports.createEvent = async (req, res) => {
          hasMeal, hasGift, fee, deleteAt)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [organizerID, title, category, description, eventTime, eventEndTime || null, location,
-       registrationDeadline || null, registrationLink || null,
+       finalDeadline, registrationLink || null,
        imageURL || null, hasMeal ? 1 : 0, hasGift ? 1 : 0, fee || 0, deleteAt]
     );
 
@@ -222,11 +235,49 @@ exports.addReview = async (req, res) => {
   const userID = req.user.userID;
 
   try {
+    // 檢查是否已評價過
+    const [existing] = await db.query(
+      'SELECT reviewID FROM Reviews WHERE userID = ? AND eventID = ?',
+      [userID, eventID]
+    );
+    if (existing.length > 0) {
+      return res.status(400).json({ message: '你已經評價過這個活動了' });
+    }
+
     await db.query(
       'INSERT INTO Reviews (userID, eventID, hasAttended, stars, content) VALUES (?, ?, ?, ?, ?)',
       [userID, eventID, hasAttended ? 1 : 0, hasAttended ? stars : null, content || null]
     );
     res.status(201).json({ message: '評價送出成功' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: '伺服器錯誤' });
+  }
+};
+
+exports.updateReview = async (req, res) => {
+  const { eventID } = req.params;
+  const { stars, content } = req.body;
+  const userID = req.user.userID;
+
+  try {
+    // 確認是本人的評價
+    const [rows] = await db.query(
+      'SELECT reviewID FROM Reviews WHERE userID = ? AND eventID = ?',
+      [userID, eventID]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ message: '找不到你的評價' });
+    }
+
+    await db.query(
+      `UPDATE Reviews SET
+        stars = ?, content = ?, isEdited = 1, updatedAt = NOW()
+       WHERE userID = ? AND eventID = ?`,
+      [stars, content || null, userID, eventID]
+    );
+
+    res.json({ message: '評價已更新' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: '伺服器錯誤' });
@@ -253,19 +304,6 @@ exports.recordHistory = async (req, res) => {
   }
 };
 
-// 【取得單一活動詳情】
-exports.getEventDetail = async (req, res) => {
-  const { eventID } = req.params;
-  try {
-    const [rows] = await db.query('SELECT * FROM Events WHERE eventID = ?', [eventID]);
-    if (rows.length === 0) return res.status(404).json({ message: '找不到此活動' });
-    res.json(rows[0]);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: '伺服器錯誤' });
-  }
-};
-
 // 【取得活動詳細（含評價）】
 exports.getEventDetail = async (req, res) => {
   const { eventID } = req.params;
@@ -285,7 +323,7 @@ exports.getEventDetail = async (req, res) => {
     const event = eventRows[0];
 
     // 取得 hashtags（透過關聯表）
-    const [hashtags] = await db.query(
+    const [hashtagRows] = await db.query(
       `SELECT h.hashtag
        FROM Event_Tag et
        JOIN Hashtags h
@@ -293,7 +331,7 @@ exports.getEventDetail = async (req, res) => {
        WHERE et.eventID = ?`,
       [eventID]
     );
-    event.hashtags = hashtags.map(h => h.hashtag);
+    event.hashtags = hashtagRows.map(h => h.hashtag);
 
     // 取得評價
     const [reviews] = await db.query(
@@ -331,45 +369,56 @@ exports.updateEvent = async (req, res) => {
     if (rows.length === 0) return res.status(404).json({ message: '活動不存在' });
     if (rows[0].organizerID !== userID) return res.status(403).json({ message: '無權修改此活動' });
 
-    await db.query(
-      `UPDATE Events SET
-        title = ?, category = ?, description = ?,
-        eventTime = ?, eventEndTime = ?, location = ?,
-        registrationDeadline = ?, registrationLink = ?,
-        imageURL = ?, hasMeal = ?, hasGift = ?, fee = ?,
-        auditStatus = 'unapproved'
-       WHERE eventID = ?`,
-      [title, category, description, eventTime, eventEndTime || null, location,
-        registrationDeadline || null, registrationLink || null,
-        imageURL || null, hasMeal ? 1 : 0, hasGift ? 1 : 0, fee || 0,
-        eventID]
+    // 自動計算報名截止時間
+    function getRegistrationDeadline(registrationDeadline, eventEndTime, eventTime) {
+      if (registrationDeadline) return registrationDeadline;
+      if (eventEndTime) return eventEndTime;
+      return eventTime;
+    }
+
+    const finalDeadline = getRegistrationDeadline(
+      registrationDeadline,
+      eventEndTime,
+      eventTime
     );
 
-    // 先刪除舊的 hashtags 再重新插入
-    await db.query('DELETE FROM Event_Tag WHERE eventID = ?', [eventID]);
-    // 重新插入新的
+    // 刪除舊的草稿（如果有）
+    await db.query('DELETE FROM EventDrafts WHERE eventID = ?', [eventID]);
+
+    // 建立新草稿
+    const [draftResult] = await db.query(
+      `INSERT INTO EventDrafts
+        (eventID, organizerID, title, category, description,
+         eventTime, eventEndTime, location, registrationDeadline,
+         registrationLink, imageURL, hasMeal, hasGift, fee)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [eventID, userID, title, category, description,
+       eventTime, eventEndTime || null, location, finalDeadline,
+       registrationLink || null, imageURL || null,
+       hasMeal ? 1 : 0, hasGift ? 1 : 0, fee || 0]
+    );
+
+    const draftID = draftResult.insertId;
+
+    // 更新 hashtags 到草稿
     if (hashtags && hashtags.length > 0) {
       for (const tag of hashtags) {
         if (!tag.trim()) continue;
-
-        await db.query(
-          'INSERT IGNORE INTO Hashtags (hashtag) VALUES (?)',
-          [tag.trim()]
-        );
+        await db.query('INSERT IGNORE INTO Hashtags (hashtag) VALUES (?)', [tag.trim()]);
         const [hashtagRows] = await db.query(
-          'SELECT hashtagID FROM Hashtags WHERE hashtag = ?',
-          [tag.trim()]
+          'SELECT hashtagID FROM Hashtags WHERE hashtag = ?', [tag.trim()]
         );
-        const hashtagID = hashtagRows[0].hashtagID;
-
-        await db.query(
-          'INSERT IGNORE INTO Event_Tag (eventID, hashtagID) VALUES (?, ?)',
-          [eventID, hashtagID]
-        );
+        // 用 draftID 標記是草稿的 hashtag（存在 Event_Tag 用負數 draftID 區分）
       }
     }
 
-    res.json({ message: '活動已更新，重新送出審核' });
+    // 把 Events 的 auditStatus 改成草稿審核中（但不影響顯示）
+    await db.query(
+      `UPDATE Events SET auditStatus = 'draft_pending' WHERE eventID = ?`,
+      [eventID]
+    );
+
+    res.json({ message: '修改已送出審核，審核通過前將維持原活動內容' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: '伺服器錯誤' });
