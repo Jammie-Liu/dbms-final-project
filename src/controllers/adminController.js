@@ -51,7 +51,7 @@ exports.getRejectedEvents = async (req, res) => {
 // 審核活動
 exports.auditEvent = async (req, res) => {
   const { eventID } = req.params;
-  const { result, rejectReason, comment, auditReason } = req.body;
+  const { result, rejectReason, comment, auditReason, version } = req.body;
   const adminID = req.user.userID;
 
   try {
@@ -69,25 +69,38 @@ exports.auditEvent = async (req, res) => {
 
     // 取得活動資訊（標題 + 主辦人ID）
     const [eventRows] = await db.query(
-      'SELECT title, organizerID FROM Events WHERE eventID = ?',
+      'SELECT version, title, organizerID FROM Events WHERE eventID = ?',
       [eventID]
     );
     if (eventRows.length === 0) {
       return res.status(404).json({ message: '活動不存在' });
     }
+    if (eventRows[0].version !== version) {
+      return res.status(409).json({
+        message: '此活動已被其他管理員審核，請重新整理後再試'
+      });
+    }
     const { title, organizerID } = eventRows[0];
 
     // 更新活動審核狀態
-    await db.query(
+    const [updateResult] = await db.query(
       `UPDATE Events SET
         auditStatus = ?,
         status = ?,
         rejectReason = ?,
-        reaudit_count = ?
-       WHERE eventID = ?`,
+        reaudit_count = ?,
+        version = version + 1
+       WHERE eventID = ? AND version = ?`,
       [result, result === 'approved' ? 'approved' : 'rejected',
-       rejectReason || null, ordinal_num, eventID]
+       rejectReason || null, ordinal_num, eventID, version]
     );
+
+    // 如果 affectedRows = 0，代表已被其他人搶先更新
+    if (updateResult.affectedRows === 0) {
+      return res.status(409).json({
+        message: '此活動已被其他管理員審核，請重新整理後再試'
+      });
+    }
 
     // 如果是被檢舉的審核，更新 Reports
     if (auditReason === 'reported') {
@@ -117,23 +130,6 @@ exports.auditEvent = async (req, res) => {
     );
 
     res.json({ message: '審核完成' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: '伺服器錯誤' });
-  }
-};
-
-// 確認檢舉是否屬實
-exports.verifyReport = async (req, res) => {
-  const { reportID } = req.params;
-  const { isVerified } = req.body;
-
-  try {
-    await db.query(
-      'UPDATE Reports SET isVerified = ? WHERE reportID = ?',
-      [isVerified ? 1 : 0, reportID]
-    );
-    res.json({ message: '檢舉審核完成' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: '伺服器錯誤' });
@@ -181,14 +177,37 @@ exports.getReportsByEvent = async (req, res) => {
 // 審核單筆檢舉（屬實/不實）
 exports.verifyReport = async (req, res) => {
   const { reportID } = req.params;
-  const { isVerified } = req.body;
+  const { isVerified, version } = req.body;
   const adminID = req.user.userID;
 
   try {
-    await db.query(
-      'UPDATE Reports SET isVerified = ?, adminID = ? WHERE reportID = ?',
-      [isVerified ? 1 : 0, adminID, reportID]
+    // 檢查 version
+    const [reportRows] = await db.query(
+      'SELECT version FROM Reports WHERE reportID = ?',
+      [reportID]
     );
+
+    if (reportRows.length === 0) {
+      return res.status(404).json({ message: '檢舉不存在' });
+    }
+
+    if (reportRows[0].version !== version) {
+      return res.status(409).json({
+        message: '此檢舉已被其他管理員審核，請重新整理後再試'
+      });
+    }
+
+    const [updateResult] = await db.query(
+      'UPDATE Reports SET isVerified = ?, adminID = ?, version = version + 1 WHERE reportID = ?',
+      [isVerified ? 1 : 0, adminID, reportID, version]
+    );
+
+    if (updateResult.affectedRows === 0) {
+      return res.status(409).json({
+        message: '此檢舉已被其他管理員審核，請重新整理後再試'
+      });
+    }
+
     res.json({ message: '審核完成' });
   } catch (err) {
     console.error(err);

@@ -208,7 +208,7 @@
     let hashtags = [];
 
     function addHashtag(e) {
-      if (e.key === 'Enter' || e.key === ' ') {
+      if (e.key === 'Enter') {
         e.preventDefault();
         const input = document.getElementById('hashtagInput');
         const tag = input.value.trim().replace('#', '');

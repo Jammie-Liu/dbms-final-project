@@ -4,6 +4,7 @@ if (!token || role !== 'admin') window.location.href = '../login.html';
 
 let currentTab = 'pending';
 let currentEventID = null;
+let currentEventVersion = 0;
 
 // 依據 tab 載入相對應的 event
 async function loadEvents() {
@@ -109,6 +110,9 @@ async function viewDetail(eventID) {
     });
     const event = await res.json();
 
+    // 存起來等等送審核時帶上
+    currentEventVersion = event.version;
+
     // 如果是被檢舉的 tab，也抓檢舉詳情
     let reportSection = '';
     if (currentTab === 'reported') {
@@ -158,12 +162,12 @@ async function viewDetail(eventID) {
                         </div>
                         <div style="display:flex;gap:8px">
                         ${r.isVerified === null ? `
-                            <button onclick="verifyReport(${r.reportID}, true)"
+                            <button onclick="verifyReport(${r.reportID}, true, ${r.version})"
                             style="width:auto;padding:6px 12px;margin:0;font-size:12px;
                             background:#dcfce7;color:#15803d;border:1px solid #86efac">
                             ✅ 屬實
                             </button>
-                            <button onclick="verifyReport(${r.reportID}, false)"
+                            <button onclick="verifyReport(${r.reportID}, false, ${r.version})"
                             style="width:auto;padding:6px 12px;margin:0;font-size:12px;
                             background:#fef2f2;color:var(--danger);border:1px solid #fecaca">
                             ❌ 不實
@@ -356,12 +360,19 @@ async function audit(eventID, result, rejectReason, comment, auditReason) {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     },
-    body: JSON.stringify({ result, rejectReason, comment, auditReason })
+    body: JSON.stringify({ result, rejectReason, comment, auditReason, version: currentEventVersion })
   });
 
+  const data = await res.json();
+
   if (!res.ok) {
-    const data = await res.json();
     alert(data.message);
+    if (res.status === 409) {
+      // 版本衝突：重新整理活動列表
+      closeDetail();
+      loadEvents();
+    }
+    return;
   }
 
   loadEvents();
@@ -379,15 +390,25 @@ function logout() {
     window.location.href = '../login.html';
 }
 
-async function verifyReport(reportID, isVerified) {
+async function verifyReport(reportID, isVerified, version) {
   await fetch(`/api/admin/reports/${reportID}/verify`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     },
-    body: JSON.stringify({ isVerified })
+    body: JSON.stringify({ isVerified, version })
   });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    alert(data.message);
+    if (res.status === 409) {
+      viewDetail(currentEventID); // 重新載入
+    }
+    return;
+  }
 
   // 重新載入 View Detail
   viewDetail(currentEventID);
