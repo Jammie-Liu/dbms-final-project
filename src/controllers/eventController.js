@@ -351,6 +351,40 @@ exports.getEventDetail = async (req, res) => {
   }
 };
 
+exports.getEventDraft = async (req, res) => {
+  const { eventID } = req.params;
+  const userID = req.user.userID;
+
+  try {
+    const [rows] = await db.query(
+      `SELECT * FROM EventDrafts
+       WHERE eventID = ? AND organizerID = ? AND auditStatus = 'unapproved'
+       ORDER BY createdAt DESC LIMIT 1`,
+      [eventID, userID]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: '沒有草稿' });
+    }
+
+    // 同時取得草稿的 hashtags
+    const draft = rows[0];
+    const [hashtagRows] = await db.query(
+      `SELECT h.hashtag
+       FROM Event_Tag et
+       JOIN Hashtags h ON et.hashtagID = h.hashtagID
+       WHERE et.eventID = ?`,
+      [eventID]
+    );
+    draft.hashtags = hashtagRows.map(h => h.hashtag);
+
+    res.json(draft);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: '伺服器錯誤' });
+  }
+};
+
 // 【修改活動】
 exports.updateEvent = async (req, res) => {
   const { eventID } = req.params;
@@ -362,6 +396,23 @@ exports.updateEvent = async (req, res) => {
   } = req.body;
 
   try {
+    const [eventInfo] = await db.query(
+      'SELECT auditStatus, reaudit_count, edit_count FROM Events WHERE eventID = ?',
+      [eventID]
+    );
+
+    const { auditStatus, reaudit_count, edit_count } = eventInfo[0];
+
+    // 退件重審上限檢查
+    if (auditStatus === 'rejected' && reaudit_count >= 3) {
+      return res.status(403).json({ message: '已達退件重審上限，無法再送出' });
+    }
+
+    // 編輯上限檢查
+    if (auditStatus === 'approved' && edit_count >= 3) {
+      return res.status(403).json({ message: '已達編輯審核上限，無法再送出' });
+    }
+
     // 確認是本人的活動
     const [rows] = await db.query(
       'SELECT organizerID FROM Events WHERE eventID = ?', [eventID]
@@ -419,6 +470,35 @@ exports.updateEvent = async (req, res) => {
     );
 
     res.json({ message: '修改已送出審核，審核通過前將維持原活動內容' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: '伺服器錯誤' });
+  }
+};
+
+exports.checkAuditLimit = async (req, res) => {
+  const { eventID } = req.params;
+  const userID = req.user.userID;
+
+  try {
+    // 確認是本人的活動
+    const [rows] = await db.query(
+      'SELECT reaudit_count, edit_count, auditStatus FROM Events WHERE eventID = ? AND organizerID = ?',
+      [eventID, userID]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: '活動不存在' });
+    }
+
+    const { reaudit_count, edit_count, auditStatus } = rows[0];
+
+    res.json({
+      reauditLimited: auditStatus === 'rejected' && reaudit_count >= 3,
+      editLimited: edit_count >= 3,
+      reaudit_count,
+      edit_count
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: '伺服器錯誤' });

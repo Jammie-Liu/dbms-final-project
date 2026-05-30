@@ -194,7 +194,8 @@ exports.auditDraft = async (req, res) => {
           eventTime = ?, eventEndTime = ?, location = ?,
           registrationDeadline = ?, registrationLink = ?,
           imageURL = ?, hasMeal = ?, hasGift = ?, fee = ?,
-          auditStatus = 'approved'
+          auditStatus = 'approved',
+          edit_count = edit_count + 1
          WHERE eventID = ?`,
         [draft.title, draft.category, draft.description,
          draft.eventTime, draft.eventEndTime, draft.location,
@@ -213,15 +214,17 @@ exports.auditDraft = async (req, res) => {
     } else {
       // 審核不通過：恢復 Events 的 auditStatus，草稿標記為 rejected
       await connection.query(
-        `UPDATE Events SET auditStatus = 'approved' WHERE eventID = ?`,
-        [draft.eventID]
+        `UPDATE Events 
+         SET auditStatus = 'rejected', reaudit_count = reaudit_count + 1, rejectReason = ?
+         WHERE eventID = ?`,
+        [rejectReason || null, draft.eventID]
       );
 
       // 通知主辦方
       await connection.query(
         `INSERT INTO Notifications (userID, eventID, message) VALUES (?, ?, ?)`,
         [draft.organizerID, draft.eventID,
-         `📋 你的活動「${draft.title}」修改版本審核未通過，原因：${rejectReason}`]
+         `❗️ 你的活動「${draft.title}」修改版本審核未通過，原因：${rejectReason}`]
       );
     }
 
@@ -234,9 +237,10 @@ exports.auditDraft = async (req, res) => {
     // 寫入 Audit_Log
     await connection.query(
       `INSERT INTO Audit_Log
-        (eventID, adminID, result, audit_reason, comment, ordinal_num, rejectReason)
-       VALUES (?, ?, ?, 'general', ?, 1, ?)`,
-      [draft.eventID, adminID, result, comment || null, rejectReason || null]
+        (eventID, adminID, result, audit_reason, comment, ordinal_num, rejectReason, audit_type)
+       VALUES (?, ?, ?, 'general', ?,
+        (SELECT COUNT(*) + 1 FROM Audit_Log al WHERE al.eventID = ?), ?, 'edit')`,
+      [draft.eventID, adminID, result, comment || null, draft.eventID, rejectReason || null]
     );
 
     await connection.commit();
