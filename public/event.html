@@ -32,6 +32,9 @@
   .main-area {
     margin-right: 0 !important;
   }
+  #description {
+    white-space: pre-wrap;
+  }
 </style>
   
 
@@ -237,7 +240,7 @@
 
         <hr style="margin:20px 0">
         <h3>活動說明</h3>
-        <p style="margin-top:8px;line-height:1.6">${event.description}</p>
+        <p style="margin-top:8px;line-height:1.6" id="description">${event.description}</p>
 
         <hr style="margin:20px 0">
         <div style="display:flex;justify-content:space-between;align-items:center">

@@ -77,6 +77,10 @@ h2 {
     color:white"
 }
 
+#description {
+    white-space: pre-wrap;
+}
+
 @media (max-width: 600px) {
     .admin-event-grid { grid-template-columns: 1fr; }
 }
