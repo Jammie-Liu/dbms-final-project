@@ -99,11 +99,22 @@ function renderEventCard(event, index) {
       </div>
 
       ${event.imageURL
-      ? `<img src="${event.imageURL}" class="card-img" alt="活動圖片">`
-      : `<div class="card-img-placeholder">${categoryLabel.emoji}</div>`
-    }
+        ? `<img src="${event.imageURL}" class="card-img" alt="活動圖片">`
+        : `<div class="card-img-placeholder">${categoryLabel.emoji}</div>`
+      }
 
       <div class="card-body">
+        ${event.auditStatus === 'draft_pending' ? `
+          <div style="display:flex;align-items:center;gap:6px;
+            background:#fff7ed;border-radius:var(--radius-sm);
+            padding:6px 10px;margin-bottom:10px;
+            border:1px solid #fed7aa">
+            <span style="font-size:14px">⚠️</span>
+            <p style="font-size:12px;color:#c2410c;margin:0">
+              活動修改中，資訊可能尚未更新
+            </p>
+          </div>
+        ` : ''}
         <span class="category-tag">${categoryLabel.emoji} ${categoryLabel.text}</span>
         <h3>${event.title}</h3>
         <div class="card-meta">

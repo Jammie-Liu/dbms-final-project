@@ -150,8 +150,18 @@
     // 載入活動資料（修改模式）
     async function loadEventData() {
       try {
-        const res = await fetch(`/api/events/${editID}`);
-        const event = await res.json();
+        // 先檢查有沒有未審核的草稿
+        const draftRes = await fetch(`/api/events/${editID}/draft`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        let event;
+        if (draftRes.ok) {
+          event = await draftRes.json(); // 有草稿就用草稿
+        } else {
+          const res = await fetch(`/api/events/${editID}`);
+          event = await res.json(); // 沒有就用原本的
+        }
 
         document.getElementById('category').value = event.category;
         document.getElementById('title').value = event.title;
@@ -198,6 +208,27 @@
         // 資料填完後重新檢查按鈕狀態
         checkFormValid();
 
+        // 檢查審核次數上限
+        const limitRes = await fetch(`/api/events/${editID}/check-limit`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const limitData = await limitRes.json();
+
+        if (limitData.reauditLimited) {
+          const btn = document.getElementById('submitBtn');
+          btn.disabled = true;
+          btn.style.background = 'var(--border)';
+          btn.style.color = 'var(--text-tertiary)';
+          btn.style.cursor = 'not-allowed';
+          btn.textContent = '已達重審上限，無法再送出';
+
+          // 顯示提示訊息
+          const message = document.getElementById('message');
+          message.textContent = '此活動已達退件重審上限（3次），無法再送出修改。';
+          message.className = 'message error';
+          message.style.display = 'block';
+        }
+
       } catch (err) {
         console.error('載入活動資料失敗', err);
       }
@@ -208,6 +239,10 @@
     let hashtags = [];
 
     function addHashtag(e) {
+      if (e.isComposing || e.keyCode === 229) {
+        return;
+      }
+
       if (e.key === 'Enter') {
         e.preventDefault();
         const input = document.getElementById('hashtagInput');
