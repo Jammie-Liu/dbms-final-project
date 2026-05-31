@@ -286,7 +286,7 @@ async function viewDetail(eventID) {
         </div>
         <hr style="margin-bottom:16px">
         <h3 style="margin-bottom:8px">活動說明</h3>
-        <p style="line-height:1.7">${event.description}</p>
+        <p style="line-height:1.7" id="description">${event.description}</p>
         ${reportSection}
         ${auditLogSection}
     `;
@@ -363,7 +363,8 @@ async function viewDetail(eventID) {
                     }
                     ${draft.hasMeal ? '<p>🍱 附餐食</p>' : ''}
                     ${draft.hasGift ? '<p>🎁 附贈品</p>' : ''}
-                    <p>📄 說明：${draft.description}</p>
+                    <p>📄 說明：</p>
+                    <p id="description">${draft.description}</p>
                     ${auditLogSection}
                 </div>
             `;
