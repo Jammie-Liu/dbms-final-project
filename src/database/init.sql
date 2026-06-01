@@ -50,19 +50,6 @@ CREATE TABLE IF NOT EXISTS Events (
   FOREIGN KEY (organizerID) REFERENCES Users(userID)
 );
 
--- 收藏
-CREATE TABLE IF NOT EXISTS Favorites (
-  favoriteID INT AUTO_INCREMENT PRIMARY KEY,
-  userID INT NOT NULL,
-  eventID INT NOT NULL,
-  folderID INT NULL,
-  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY unique_favorite (userID, eventID), -- 同一使用者不能重複收藏同一活動
-  FOREIGN KEY (userID) REFERENCES Users(userID),
-  FOREIGN KEY (eventID) REFERENCES Events(eventID),
-  FOREIGN KEY (folderID) REFERENCES FavoriteFolders(folderID)
-);
-
 -- 收藏資料夾
 CREATE TABLE IF NOT EXISTS FavoriteFolders (
   folderID INT AUTO_INCREMENT PRIMARY KEY,
@@ -72,6 +59,19 @@ CREATE TABLE IF NOT EXISTS FavoriteFolders (
   FOREIGN KEY (userID) REFERENCES Users(userID)
 );
 
+-- 收藏
+CREATE TABLE IF NOT EXISTS Favorites (
+  favoriteID INT AUTO_INCREMENT PRIMARY KEY,
+  userID INT NOT NULL,
+  eventID INT NOT NULL,
+  folderID INT NULL,
+  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY unique_favorite (userID, eventID), -- 同一使用者不能重複收藏同一活動
+  FOREIGN KEY (userID) REFERENCES Users(userID),
+  CONSTRAINT fk_favorites_event FOREIGN KEY (eventID) REFERENCES Events(eventID) ON DELETE CASCADE,
+  FOREIGN KEY (folderID) REFERENCES FavoriteFolders(folderID)
+);
+
 -- 瀏覽紀錄
 CREATE TABLE IF NOT EXISTS BrowsingHistory (
   historyID INT AUTO_INCREMENT PRIMARY KEY,
@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS BrowsingHistory (
   eventID INT NOT NULL,
   viewedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (userID) REFERENCES Users(userID),
-  FOREIGN KEY (eventID) REFERENCES Events(eventID)
+  CONSTRAINT fk_history_event FOREIGN KEY (eventID) REFERENCES Events(eventID) ON DELETE CASCADE
 );
 
 -- 評價
@@ -95,7 +95,7 @@ CREATE TABLE IF NOT EXISTS Reviews (
   updatedAt DATETIME NULL,
   UNIQUE KEY unique_review (userID, eventID), -- 同一使用者只能評價同一活動一次
   FOREIGN KEY (userID) REFERENCES Users(userID),
-  FOREIGN KEY (eventID) REFERENCES Events(eventID)
+  CONSTRAINT fk_reviews_event FOREIGN KEY (eventID) REFERENCES Events(eventID) ON DELETE CASCADE
 );
 
 -- 檢舉
@@ -145,7 +145,7 @@ CREATE TABLE IF NOT EXISTS Event_Tag (
   eventID INT NOT NULL,
   hashtagID INT NOT NULL,
   PRIMARY KEY (eventID, hashtagID),
-  FOREIGN KEY (eventID) REFERENCES Events(eventID),
+  CONSTRAINT fk_event_tag_event FOREIGN KEY (eventID) REFERENCES Events(eventID) ON DELETE CASCADE,
   FOREIGN KEY (hashtagID) REFERENCES Hashtags(hashtagID)
 );
 
@@ -183,7 +183,7 @@ CREATE TABLE IF NOT EXISTS EventDrafts (
   auditStatus ENUM('unapproved','approved','rejected') DEFAULT 'unapproved',
   rejectReason TEXT NULL,
   createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (eventID) REFERENCES Events(eventID),
+  CONSTRAINT fk_drafts_event FOREIGN KEY (eventID) REFERENCES Events(eventID) ON DELETE CASCADE,
   FOREIGN KEY (organizerID) REFERENCES Users(userID)
 );
 
