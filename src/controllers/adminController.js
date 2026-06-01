@@ -22,9 +22,14 @@ exports.getPendingDrafts = async (req, res) => {
     const [drafts] = await db.query(
       `SELECT d.*, e.title AS originalTitle, u.username AS organizerName
        FROM EventDrafts d
+       JOIN (
+         SELECT eventID, MAX(draftID) AS draftID
+         FROM EventDrafts
+         WHERE auditStatus = 'unapproved'
+         GROUP BY eventID
+       ) latest ON d.eventID = latest.eventID AND d.draftID = latest.draftID
        JOIN Events e ON d.eventID = e.eventID
        JOIN Users u ON d.organizerID = u.userID
-       WHERE d.auditStatus = 'unapproved'
        ORDER BY d.createdAt ASC`
     );
 
@@ -53,10 +58,17 @@ exports.getPendingDrafts = async (req, res) => {
 exports.getApprovedEvents = async (req, res) => {
   try {
     const [events] = await db.query(
-      `SELECT e.*, u.username AS organizerName
-       FROM Events e JOIN Users u ON e.organizerID = u.userID
+      `SELECT e.*, u.username AS organizerName, al.auditTime
+       FROM Events e
+       JOIN Users u ON e.organizerID = u.userID
+       LEFT JOIN (
+         SELECT eventID, MAX(audit_time) AS auditTime
+         FROM Audit_Log
+         WHERE result = 'approved'
+         GROUP BY eventID
+       ) al ON e.eventID = al.eventID
        WHERE e.auditStatus = 'approved'
-       ORDER BY e.publishedAt DESC`
+       ORDER BY al.auditTime DESC`
     );
     res.json(events);
   } catch (err) {
@@ -69,10 +81,17 @@ exports.getApprovedEvents = async (req, res) => {
 exports.getRejectedEvents = async (req, res) => {
   try {
     const [events] = await db.query(
-      `SELECT e.*, u.username AS organizerName
-       FROM Events e JOIN Users u ON e.organizerID = u.userID
+      `SELECT e.*, u.username AS organizerName, al.auditTime
+       FROM Events e
+       JOIN Users u ON e.organizerID = u.userID
+       LEFT JOIN (
+         SELECT eventID, MAX(audit_time) AS auditTime
+         FROM Audit_Log
+         WHERE result = 'rejected'
+         GROUP BY eventID
+       ) al ON e.eventID = al.eventID
        WHERE e.auditStatus = 'rejected'
-       ORDER BY e.publishedAt DESC`
+       ORDER BY al.auditTime DESC`
     );
     res.json(events);
   } catch (err) {
@@ -209,6 +228,7 @@ exports.auditDraft = async (req, res) => {
           eventTime = ?, eventEndTime = ?, location = ?,
           registrationDeadline = ?, registrationLink = ?,
           imageURL = ?, hasMeal = ?, hasGift = ?, fee = ?,
+          status = 'approved',
           auditStatus = 'approved',
           edit_count = edit_count + 1
          WHERE eventID = ?`,
@@ -457,7 +477,7 @@ exports.getReportedSuccessEvents = async (req, res) => {
        LEFT JOIN Reports r ON e.eventID = r.eventID
        WHERE e.isReported = 1
        GROUP BY e.eventID
-       ORDER BY e.publishedAt DESC`
+       ORDER BY e.updatedAt DESC`
     );
     res.json(events);
   } catch (err) {
@@ -474,14 +494,15 @@ exports.getReportedEvents = async (req, res) => {
         GROUP_CONCAT(DISTINCT r.reason) AS reportReasons,
         GROUP_CONCAT(DISTINCT r.detail SEPARATOR ' | ') AS reportDetails,
         COUNT(r.reportID) AS reportCount,
-        SUM(CASE WHEN r.isVerified = 1 THEN 1 ELSE 0 END) AS verifiedCount
+        SUM(CASE WHEN r.isVerified = 1 THEN 1 ELSE 0 END) AS verifiedCount,
+        MAX(r.createdAt) AS latestReportAt
        FROM Events e
        JOIN Users u ON e.organizerID = u.userID
        JOIN Reports r ON e.eventID = r.eventID
        WHERE e.isReported = 0
        GROUP BY e.eventID
        HAVING COUNT(r.reportID) > 0
-       ORDER BY reportCount DESC`
+       ORDER BY latestReportAt ASC`
     );
     res.json(events);
   } catch (err) {

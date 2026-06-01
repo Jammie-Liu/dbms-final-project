@@ -155,8 +155,11 @@
       list.innerHTML = events.map(event => `
         <div class="event-card" onclick="goToEvent(${event.eventID})">
           <div class="card-top">
-            <span class="status-tag open">已收藏</span>
-            <div class="card-actions">
+            <div>
+              <span class="status-tag open">已收藏</span>
+              ${event.status === 'cancelled' ? '<span class="status-tag cancelled">已取消</span>' : ''}
+            </div>
+              <div class="card-actions">
               <span onclick="event.stopPropagation(); openMoveFolder(${event.eventID})"
                 title="加入資料夾"
                 style="cursor:pointer;font-size:16px;padding:4px">📁</span>

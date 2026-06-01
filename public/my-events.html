@@ -77,6 +77,15 @@
               }
             </p>
           ` : ''}
+            ${event.edit_count > 0 ? `
+            <p style="font-size:12px;color:var(--text-tertiary);margin-top:5px">
+              已編輯 ${event.edit_count} 次
+              ${event.edit_count >= 3
+                ? '（已達編輯審核上限）'
+                : `（剩餘 ${3 - event.edit_count} 次編輯機會）`
+              }
+            </p>
+          ` : ''}
           </div>
         </div>
       `).join('');
