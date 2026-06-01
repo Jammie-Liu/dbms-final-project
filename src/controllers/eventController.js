@@ -32,9 +32,10 @@ exports.getEvents = async (req, res) => {
     END`;
     // 排名1→權重5, 排名2→4, 排名3→3, 排名4→2：用 (6 - rank) 換算
 
+    // 活動報名尚未截止：1，報名已截止：0
     let registrationWeight = `CASE WHEN (e.registrationDeadline IS NULL OR e.registrationDeadline > NOW()) THEN 1 ELSE 0 END`;
 
-    // 新增：活動是否已結束
+    // 活動尚未結束：1，活動已結束：0
     let notEndedWeight = `CASE WHEN (e.eventEndTime IS NULL AND e.eventTime > NOW()) OR (e.eventEndTime IS NOT NULL AND e.eventEndTime > NOW()) THEN 1 ELSE 0 END`;
 
     let orderSQL = '';
@@ -50,7 +51,7 @@ exports.getEvents = async (req, res) => {
     } else {
       // 預設：分類權重 + 報名未過期 + 發布時間近
       orderSQL = `(${notEndedWeight}) * 20 + (${categoryWeightSQL}) * 0.5 + (${registrationWeight}) * 10 DESC, e.publishedAt DESC`;
-  }
+    }
 
     let whereSQL = `e.status = 'approved' AND e.auditStatus IN ('approved', 'draft_pending') AND e.isReported = 0`;
     const params = [];
@@ -371,10 +372,10 @@ exports.getEventDraft = async (req, res) => {
     const draft = rows[0];
     const [hashtagRows] = await db.query(
       `SELECT h.hashtag
-       FROM Event_Tag et
-       JOIN Hashtags h ON et.hashtagID = h.hashtagID
-       WHERE et.eventID = ?`,
-      [eventID]
+       FROM Draft_Tag dt
+       JOIN Hashtags h ON dt.hashtagID = h.hashtagID
+       WHERE dt.draftID = ?`,
+      [draft.draftID]
     );
     draft.hashtags = hashtagRows.map(h => h.hashtag);
 
@@ -433,9 +434,6 @@ exports.updateEvent = async (req, res) => {
       eventTime
     );
 
-    // 刪除舊的草稿（如果有）
-    await db.query('DELETE FROM EventDrafts WHERE eventID = ?', [eventID]);
-
     // 建立新草稿
     const [draftResult] = await db.query(
       `INSERT INTO EventDrafts
@@ -455,11 +453,19 @@ exports.updateEvent = async (req, res) => {
     if (hashtags && hashtags.length > 0) {
       for (const tag of hashtags) {
         if (!tag.trim()) continue;
+
         await db.query('INSERT IGNORE INTO Hashtags (hashtag) VALUES (?)', [tag.trim()]);
+
         const [hashtagRows] = await db.query(
           'SELECT hashtagID FROM Hashtags WHERE hashtag = ?', [tag.trim()]
         );
-        // 用 draftID 標記是草稿的 hashtag（存在 Event_Tag 用負數 draftID 區分）
+
+        const hashtagID = hashtagRows[0].hashtagID;
+
+        await db.query(
+          'INSERT IGNORE INTO Draft_Tag (draftID, hashtagID) VALUES (?, ?)',
+          [draftID, hashtagID]
+        );
       }
     }
 

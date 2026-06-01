@@ -27,6 +27,21 @@ exports.getPendingDrafts = async (req, res) => {
        WHERE d.auditStatus = 'unapproved'
        ORDER BY d.createdAt ASC`
     );
+
+    // 載入每個草稿的 hashtags
+    for (const draft of drafts) {
+      const [hashtagRows] = await db.query(
+        `SELECT h.hashtag
+         FROM Draft_Tag dt
+         JOIN Hashtags h
+         ON dt.hashtagID = h.hashtagID
+         WHERE dt.draftID = ?`,
+        [draft.draftID]
+      );
+
+      draft.hashtags = hashtagRows.map(row => row.hashtag);
+    }
+
     res.json(drafts);
   } catch (err) {
     console.error(err);
@@ -204,6 +219,29 @@ exports.auditDraft = async (req, res) => {
          draft.eventID]
       );
 
+      // 先刪除原本活動的 hashtag 關聯
+      await connection.query(
+        'DELETE FROM Event_Tag WHERE eventID = ?',
+        [draft.eventID]
+      );
+
+      // 取得草稿 hashtag
+      const [draftTags] = await connection.query(
+        `SELECT hashtagID
+        FROM Draft_Tag
+        WHERE draftID = ?`,
+        [draftID]
+      );
+
+      // 建立新的活動 hashtag 關聯
+      for (const tag of draftTags) {
+        await connection.query(
+          `INSERT INTO Event_Tag (eventID, hashtagID)
+          VALUES (?, ?)`,
+          [draft.eventID, tag.hashtagID]
+        );
+      }
+
       // 通知主辦方
       await connection.query(
         `INSERT INTO Notifications (userID, eventID, message) VALUES (?, ?, ?)`,
@@ -233,6 +271,13 @@ exports.auditDraft = async (req, res) => {
       `UPDATE EventDrafts SET auditStatus = ?, rejectReason = ? WHERE draftID = ?`,
       [result, rejectReason || null, draftID]
     );
+
+    if (result === 'approved') {
+      await connection.query(
+        'DELETE FROM Draft_Tag WHERE draftID = ?',
+        [draftID]
+      );
+    }
 
     // 寫入 Audit_Log
     await connection.query(
@@ -361,12 +406,11 @@ exports.confirmReport = async (req, res) => {
 
     // 檢查是否已經被核實過
     const [eventCheck] = await db.query(
-      'SELECT isReported FROM Events WHERE eventID = ?', [eventID]
+      'SELECT isReported, organizerID, title FROM Events WHERE eventID = ?', [eventID]
     );
     if (eventCheck[0].isReported === 1) {
       return res.status(409).json({ message: '此活動已被核實，請重新整理' });
     }
-
     const { organizerID, title } = eventCheck[0];
 
     // 標記活動為被檢舉成功（不顯示給使用者）
