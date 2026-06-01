@@ -50,6 +50,7 @@ async function loadEvents() {
                                 ? ` <span class="status-tag soon">修改待審核</span>`
                                 : `<span class="status-tag soon">待審核</span>`
             }
+            ${event.status === 'cancelled' ? '<span class="status-tag cancelled">已取消</span>' : ''}
         </div>
         <div class="card-body" style="flex:1">
         <h3>${event.title}</h3>
@@ -258,7 +259,7 @@ async function viewDetail(eventID) {
         <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
             <p>🗂️ ${categoryMap[event.category] || event.category}</p>
             <p>👤 主辦人：${event.organizerName}</p>
-            <p>📅 活動時間：${new Date(event.eventTime).toLocaleString('zh-TW')}</p>
+            <p>📅 活動時間：${new Date(event.eventTime).toLocaleString('zh-TW')} - ${new Date(event.eventEndTime).toLocaleString('zh-TW')}</p>
             <p>📍 地點：${event.location}</p>
             <p>💰 費用：${event.fee > 0 ? event.fee + ' 元' : '免費'}</p>
             ${event.registrationDeadline
@@ -338,7 +339,7 @@ async function viewDetail(eventID) {
                     }
                     <p>🗂️ 分類：${categoryMap[draft.category] || draft.category}</p>
                     <p>👤 主辦人：${draft.organizerName}</p>
-                    <p>📅 時間：${new Date(draft.eventTime).toLocaleString('zh-TW')}</p>
+                    <p>📅 時間：${new Date(draft.eventTime).toLocaleString('zh-TW')} - ${new Date(draft.eventEndTime).toLocaleString('zh-TW')}</p>
                     <p>📍 地點：${draft.location}</p>
                     <p>💰 費用：${draft.fee > 0 ? draft.fee + ' 元' : '免費'}</p>
                     ${draft.registrationDeadline
@@ -436,7 +437,17 @@ async function auditDraft(draftID, result, rejectReason, comment) {
   });
 
   const data = await res.json();
-  if (!res.ok) alert(data.message);
+  if (!res.ok) {
+    alert(data.message);
+    if (res.status === 409) {
+      // 版本衝突：重新整理活動列表
+      closeDetail();
+      loadEvents();
+    }
+    return;
+  }
+
+  closeDetail();
   loadEvents();
 }
 

@@ -53,7 +53,7 @@ exports.getEvents = async (req, res) => {
       orderSQL = `(${notEndedWeight}) * 20 + (${categoryWeightSQL}) * 0.5 + (${registrationWeight}) * 10 DESC, e.publishedAt DESC`;
     }
 
-    let whereSQL = `e.status = 'approved' AND e.auditStatus IN ('approved', 'draft_pending') AND e.isReported = 0`;
+    let whereSQL = `e.status IN ('approved', 'cancelled') AND e.auditStatus IN ('approved', 'draft_pending') AND e.isReported = 0`;
     const params = [];
 
     if (category) {
@@ -90,8 +90,7 @@ exports.searchEvents = async (req, res) => {
   const { keyword, category, date, location, fee, hasMeal, hasGift } = req.query;
 
   try {
-    let conditions = ["e.status = 'approved'", "e.auditStatus IN ('approved', 'draft_pending')", "e.isReported = 0"];
-    let params = [];
+      let conditions = ["e.status IN ('approved', 'cancelled')", "e.auditStatus IN ('approved', 'draft_pending')", "e.isReported = 0"];
 
     if (keyword) {
       conditions.push('(e.title LIKE ? OR e.description LIKE ? OR h.hashtag LIKE ?)');
@@ -433,6 +432,25 @@ exports.updateEvent = async (req, res) => {
       eventEndTime,
       eventTime
     );
+
+    // 清除同一活動先前尚未審核的草稿，避免管理員看到過時版本
+    const [oldDrafts] = await db.query(
+      'SELECT draftID FROM EventDrafts WHERE eventID = ? AND organizerID = ? AND auditStatus = ?',
+      [eventID, userID, 'unapproved']
+    );
+
+    if (oldDrafts.length > 0) {
+      const oldDraftIDs = oldDrafts.map(d => d.draftID);
+      const placeholders = oldDraftIDs.map(() => '?').join(',');
+      await db.query(
+        `DELETE FROM Draft_Tag WHERE draftID IN (${placeholders})`,
+        oldDraftIDs
+      );
+      await db.query(
+        `DELETE FROM EventDrafts WHERE draftID IN (${placeholders})`,
+        oldDraftIDs
+      );
+    }
 
     // 建立新草稿
     const [draftResult] = await db.query(

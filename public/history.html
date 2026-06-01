@@ -44,6 +44,7 @@
         <div class="event-card" onclick="goToEvent(${event.eventID})">
           <div class="card-body">
             <h3>${event.title}</h3>
+            ${event.status === 'cancelled' ? '<span class="status-tag cancelled" style="margin-bottom:8px;display:inline-block">已取消</span>' : ''}
             <p>📅 ${new Date(event.eventTime).toLocaleDateString('zh-TW')}</p>
             <p>📍 ${event.location}</p>
             <p style="color:#aaa;font-size:12px">
