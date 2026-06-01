@@ -28,7 +28,7 @@ promisePool.getConnection = () => {
       promiseConnection.release = () => connection.release();
       resolve(promiseConnection);
     });
-  });ㄎ
+  });
 };
 
 module.exports = promisePool;

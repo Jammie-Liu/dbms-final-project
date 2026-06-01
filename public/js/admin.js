@@ -39,7 +39,7 @@ async function loadEvents() {
                     ${event.reportReasons.split(',').map(r => `
                         <span class="status-tag cancelled">${getReasonLabel(r)}</span>
                     `).join('')}
-                </div>`
+                  </div>`
                 : currentTab === 'approved'
                     ? `<span class="status-tag open">已通過</span>`
                     : currentTab === 'rejected'
@@ -97,10 +97,10 @@ async function loadEvents() {
 // 檢舉原因中文標籤
 function getReasonLabel(reason) {
     const map = {
-    inappropriate: '不當內容',
-    violence: '暴力',
-    fraud: '詐騙',
-    misinformation: '不實資訊'
+        inappropriate: '不當內容',
+        violence: '暴力',
+        fraud: '詐騙',
+        misinformation: '不實資訊'
     };
     return map[reason.trim()] || reason;
 }
@@ -153,43 +153,43 @@ async function viewDetail(eventID) {
                 ${reports.map(r => `
                     <div style="background:var(--bg);border-radius:var(--radius-md);
                     padding:14px 16px;border:1px solid var(--border)">
-                    <div style="display:flex;justify-content:space-between;
-                        align-items:flex-start;margin-bottom:8px">
-                        <div>
-                        <p style="font-weight:600;font-size:14px">
-                            ${getReasonLabel(r.reason)}
-                        </p>
-                        <p style="font-size:12px;color:var(--text-tertiary)">
-                            👤 ${r.reporterName} ・
-                            ${new Date(r.createdAt).toLocaleDateString('zh-TW')}
-                        </p>
+                        <div style="display:flex;justify-content:space-between;
+                            align-items:flex-start;margin-bottom:8px">
+                            <div>
+                                <p style="font-weight:600;font-size:14px">
+                                    ${getReasonLabel(r.reason)}
+                                </p>
+                                <p style="font-size:12px;color:var(--text-tertiary)">
+                                    👤 ${r.reporterName} ・
+                                    ${new Date(r.createdAt).toLocaleDateString('zh-TW')}
+                                </p>
+                            </div>
+                            <div style="display:flex;gap:8px">
+                                ${r.isVerified === null ? `
+                                    <button onclick="verifyReport(${r.reportID}, true, ${r.version})"
+                                    style="width:auto;padding:6px 12px;margin:0;font-size:12px;
+                                    background:#dcfce7;color:#15803d;border:1px solid #86efac">
+                                    ✅ 屬實
+                                    </button>
+                                    <button onclick="verifyReport(${r.reportID}, false, ${r.version})"
+                                    style="width:auto;padding:6px 12px;margin:0;font-size:12px;
+                                    background:#fef2f2;color:var(--danger);border:1px solid #fecaca">
+                                    ❌ 不實
+                                    </button>
+                                ` : `
+                                    <span class="status-tag ${r.isVerified === 1 ? 'open' : 'cancelled'}">
+                                    ${r.isVerified === 1 ? '✅ 屬實' : '❌ 不實'}
+                                    </span>
+                                `}
+                            </div>
                         </div>
-                        <div style="display:flex;gap:8px">
-                        ${r.isVerified === null ? `
-                            <button onclick="verifyReport(${r.reportID}, true, ${r.version})"
-                            style="width:auto;padding:6px 12px;margin:0;font-size:12px;
-                            background:#dcfce7;color:#15803d;border:1px solid #86efac">
-                            ✅ 屬實
-                            </button>
-                            <button onclick="verifyReport(${r.reportID}, false, ${r.version})"
-                            style="width:auto;padding:6px 12px;margin:0;font-size:12px;
-                            background:#fef2f2;color:var(--danger);border:1px solid #fecaca">
-                            ❌ 不實
-                            </button>
-                        ` : `
-                            <span class="status-tag ${r.isVerified === 1 ? 'open' : 'cancelled'}">
-                            ${r.isVerified === 1 ? '✅ 屬實' : '❌ 不實'}
-                            </span>
-                        `}
-                        </div>
-                    </div>
-                    ${r.detail ? `
-                        <p style="font-size:13px;color:var(--text-secondary);
-                        background:white;padding:8px 12px;border-radius:var(--radius-sm);
-                        border:1px solid var(--border)">
-                        ${r.detail}
-                        </p>
-                    ` : ''}
+                        ${r.detail ? `
+                            <p style="font-size:13px;color:var(--text-secondary);
+                            background:white;padding:8px 12px;border-radius:var(--radius-sm);
+                            border:1px solid var(--border)">
+                            ${r.detail}
+                            </p>
+                        ` : ''}
                     </div>
                 `).join('')}
             </div>
@@ -353,7 +353,7 @@ async function viewDetail(eventID) {
                         ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
                             <span>🏷️ hashtags：</span>
                             ${draft.hashtags.map(tag => `
-                                <span style="background:var(--brand-light);color:var(--brand);
+                                <span style="background:white;color:var(--brand);
                                     padding:4px 10px;border-radius:20px;font-size:13px;font-weight:500">
                                     #${tag}
                                 </span>
